@@ -1,0 +1,113 @@
+# Quality thresholds for Portuguese (Brazilian and European) web text.
+#
+# Every threshold carries its value, the source it comes from (a key of
+# `sources`) and a one-line rationale. `limpia` as a source marks a regional
+# adaptation made in this repository; its rationale says what changed and why.
+# The loader rejects entries that lack any of the three fields.
+
+language: pt
+stopwords: pt
+
+sources:
+  gopher:
+    citation: "Rae et al. (2021). Scaling Language Models: Methods, Analysis & Insights from Training Gopher. Appendix A."
+    url: "https://arxiv.org/abs/2112.11446"
+  fineweb:
+    citation: "Penedo et al. (2024). The FineWeb Datasets: Decanting the Web for the Finest Text Data at Scale."
+    url: "https://arxiv.org/abs/2406.17557"
+  fineweb2:
+    citation: "Penedo et al. (2025). FineWeb2: One Pipeline to Scale Them All."
+    url: "https://arxiv.org/abs/2506.20920"
+  limpia:
+    citation: "Regional adaptation in this repository (see rationale)."
+    url: "https://github.com/GonzaloFuentes1/limpia"
+
+gopher_quality:
+  min_words:
+    value: 50
+    source: gopher
+    rationale: "Shorter pages are mostly navigation, captions or stubs."
+  max_words:
+    value: 100000
+    source: gopher
+    rationale: "Longer pages are mostly dumps, logs or concatenated listings."
+  min_mean_word_length:
+    value: 3.0
+    source: gopher
+    rationale: "Very short mean word length signals tokens, codes or broken extraction."
+  max_mean_word_length:
+    value: 10.0
+    source: gopher
+    rationale: "Kept from Gopher; it bounds the document mean, so long words such as 'responsabilidades' do not trigger it alone; it mainly catches URLs, hashes and glued text."
+  max_symbol_word_ratio:
+    value: 0.1
+    source: gopher
+    rationale: "Many '#' or ellipses per word indicates hashtag spam or truncated listings."
+  max_bullet_lines_ratio:
+    value: 0.9
+    source: gopher
+    rationale: "Pages that are almost entirely bullet lines are menus or link lists."
+  max_ellipsis_lines_ratio:
+    value: 0.3
+    source: gopher
+    rationale: "Many lines ending in ellipsis are truncated previews (news indexes, search results)."
+  min_alpha_words_ratio:
+    value: 0.8
+    source: gopher
+    rationale: "Words without letters are numbers, tables or markup residue."
+  min_stopwords:
+    value: 2
+    source: fineweb2
+    rationale: "Gopher requires two English stopwords; FineWeb-2 replaces the English list with language-specific ones, as done here with a Portuguese list."
+  bullet_prefixes:
+    value: ["•", "‣", "◦", "▪", "►", "-", "*"]
+    source: limpia
+    rationale: "Gopher counts bullet lines; the em dash is deliberately excluded because Portuguese uses it (travessão) to open dialogue lines in prose."
+
+gopher_repetition:
+  max_dup_line_frac:
+    value: 0.30
+    source: gopher
+    rationale: "Fraction of lines that repeat an earlier line; boilerplate-heavy pages exceed it."
+  max_dup_para_frac:
+    value: 0.30
+    source: gopher
+    rationale: "Fraction of paragraphs that repeat an earlier paragraph."
+  max_dup_line_char_frac:
+    value: 0.20
+    source: gopher
+    rationale: "Character-weighted version of the duplicate line fraction."
+  max_dup_para_char_frac:
+    value: 0.20
+    source: gopher
+    rationale: "Character-weighted version of the duplicate paragraph fraction."
+  max_top_ngram_char_frac:
+    value: {2: 0.20, 3: 0.18, 4: 0.16}
+    source: gopher
+    rationale: "Characters covered by the most frequent word n-gram; catches keyword stuffing."
+  max_dup_ngram_char_frac:
+    value: {5: 0.15, 6: 0.14, 7: 0.13, 8: 0.12, 9: 0.11, 10: 0.10}
+    source: gopher
+    rationale: "Characters covered by repeated word n-grams; catches templated and spun text."
+
+fineweb:
+  min_terminal_punct_ratio:
+    value: 0.12
+    source: fineweb
+    rationale: "Documents where at most this fraction of lines end in terminal punctuation are lists or menus (removed if ratio <= value)."
+  max_short_line_ratio:
+    value: 0.67
+    source: fineweb
+    rationale: "Documents where at least this fraction of lines are short are navigation-heavy (removed if ratio >= value)."
+  short_line_chars:
+    value: 30
+    source: fineweb
+    rationale: "A line shorter than this many characters counts as short."
+  max_dup_line_char_frac:
+    value: 0.10
+    source: fineweb
+    rationale: "Characters in duplicated lines; removed if fraction >= value."
+  terminal_punctuation:
+    value: [".", "!", "?", "\"", "'", "…", "»", "”"]
+    source: limpia
+    rationale: "FineWeb's sentence-final characters plus the ellipsis character and closing guillemet and curly quote, which Portuguese typography uses at the end of quoted sentences."
