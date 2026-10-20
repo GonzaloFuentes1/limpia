@@ -1,0 +1,126 @@
+{
+  "limpia_version": "0.1.0",
+  "command": "python benchmarks/dedup_bench.py --n-clusters 2000 --max-copies 4 --seed 0 --num-perm 128 --ngram 5",
+  "corpus": {
+    "documents": 5940,
+    "clusters": 2000,
+    "originals": 2000,
+    "copies": 3940,
+    "edit_levels": [
+      0.0,
+      0.01,
+      0.03,
+      0.05,
+      0.1,
+      0.2
+    ],
+    "mean_jaccard_by_edit_rate": {
+      "0.00": 1.0,
+      "0.01": 0.7912728603294971,
+      "0.03": 0.6821639439845548,
+      "0.05": 0.5863379560354589,
+      "0.10": 0.4060604074754503,
+      "0.20": 0.22702148098721003
+    }
+  },
+  "params": {
+    "num_perm": 128,
+    "ngram": 5,
+    "unit": "word",
+    "seed": 0
+  },
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel",
+    "cpu_count": 16,
+    "python": "3.12.13",
+    "numpy": "2.5.4"
+  },
+  "results": [
+    {
+      "method": "exact",
+      "precision": 1.0,
+      "recall": 0.09959141981613892,
+      "f1": 0.18114259173246633,
+      "true_pairs": 7832.0,
+      "predicted_pairs": 780.0,
+      "recall_by_edit_rate": {
+        "0.00": 1.0,
+        "0.01": 0.026813880126182965,
+        "0.03": 0.0014641288433382138,
+        "0.05": 0.0,
+        "0.10": 0.0,
+        "0.20": 0.0
+      },
+      "seconds": 0.428276399965398,
+      "docs_per_sec": 13869.547797823821
+    },
+    {
+      "method": "minhash",
+      "threshold": 0.6,
+      "bands": 18,
+      "rows": 7,
+      "precision": 1.0,
+      "recall": 0.3729570990806946,
+      "f1": 0.5432902445829071,
+      "true_pairs": 7832.0,
+      "predicted_pairs": 2921.0,
+      "recall_by_edit_rate": {
+        "0.00": 1.0,
+        "0.01": 0.8470031545741324,
+        "0.03": 0.6764275256222547,
+        "0.05": 0.3553223388305847,
+        "0.10": 0.06502890173410404,
+        "0.20": 0.003289473684210526
+      },
+      "seconds": 3.1453588000149466,
+      "signature_seconds": 2.62118980003288,
+      "docs_per_sec": 1888.496790881782
+    },
+    {
+      "method": "minhash",
+      "threshold": 0.7,
+      "bands": 14,
+      "rows": 9,
+      "precision": 1.0,
+      "recall": 0.27183350357507663,
+      "f1": 0.4274671217749222,
+      "true_pairs": 7832.0,
+      "predicted_pairs": 2129.0,
+      "recall_by_edit_rate": {
+        "0.00": 1.0,
+        "0.01": 0.7113564668769716,
+        "0.03": 0.424597364568082,
+        "0.05": 0.16491754122938532,
+        "0.10": 0.015895953757225433,
+        "0.20": 0.0
+      },
+      "seconds": 3.04753849998815,
+      "signature_seconds": 2.62118980003288,
+      "docs_per_sec": 1949.1140144818835
+    },
+    {
+      "method": "minhash",
+      "threshold": 0.8,
+      "bands": 9,
+      "rows": 13,
+      "precision": 1.0,
+      "recall": 0.1773493360572012,
+      "f1": 0.3012688428586921,
+      "true_pairs": 7832.0,
+      "predicted_pairs": 1389.0,
+      "recall_by_edit_rate": {
+        "0.00": 1.0,
+        "0.01": 0.4921135646687697,
+        "0.03": 0.14348462664714495,
+        "0.05": 0.0239880059970015,
+        "0.10": 0.001445086705202312,
+        "0.20": 0.0
+      },
+      "seconds": 2.864092600008007,
+      "signature_seconds": 2.62118980003288,
+      "docs_per_sec": 2073.9552904062507
+    }
+  ]
+}
