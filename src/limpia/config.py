@@ -6,6 +6,9 @@ The loader enforces that contract: every entry must declare ``value``,
 ``source`` (a key of the file's ``sources`` table) and ``rationale``, and
 unknown or missing keys are errors rather than silently ignored, because a
 typo in a threshold name would otherwise fall back to a default unnoticed.
+
+Thresholds typed ``float | None`` may be ``null`` in the YAML, which disables
+that rule; the entry still needs a source and a rationale saying why.
 """
 
 from __future__ import annotations
@@ -34,20 +37,21 @@ class GopherQualityConfig:
 
 @dataclass(frozen=True)
 class GopherRepetitionConfig:
-    max_dup_line_frac: float
-    max_dup_para_frac: float
-    max_dup_line_char_frac: float
-    max_dup_para_char_frac: float
+    max_dup_line_frac: float | None
+    max_dup_para_frac: float | None
+    max_dup_line_char_frac: float | None
+    max_dup_para_char_frac: float | None
     max_top_ngram_char_frac: dict[int, float]
     max_dup_ngram_char_frac: dict[int, float]
 
 
 @dataclass(frozen=True)
 class FineWebConfig:
-    min_terminal_punct_ratio: float
-    max_short_line_ratio: float
+    min_terminal_punct_ratio: float | None
+    max_short_line_ratio: float | None
     short_line_chars: int
-    max_dup_line_char_frac: float
+    max_dup_line_char_frac: float | None
+    max_newline_word_ratio: float | None
     terminal_punctuation: tuple[str, ...]
 
 
@@ -82,6 +86,12 @@ def load_stopwords(name: str) -> frozenset[str]:
 
 
 def _coerce(value: Any, annotation: str) -> Any:
+    if annotation.endswith(" | None"):
+        if value is None:
+            return None
+        annotation = annotation.removesuffix(" | None")
+    elif value is None:
+        raise ValueError("null is not allowed here")
     if annotation.startswith("tuple"):
         return tuple(value)
     if annotation.startswith("dict[int"):

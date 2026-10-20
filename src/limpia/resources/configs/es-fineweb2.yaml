@@ -1,0 +1,130 @@
+# FineWeb-2 thresholds for Spanish (spa_Latn), as an alternative to es.yaml.
+#
+# FineWeb-2 calibrated these values per language on its own crawl, with
+# datatrove's word tokenizer for Spanish; limpia splits words on whitespace and
+# strips punctuation, so the statistics are close to, not identical with, the
+# ones the thresholds were fitted on. Values not set by the FineWeb-2 language
+# config keep datatrove's defaults, which FineWeb-2 used. Rules that the
+# FineWeb-2 pipeline disables are `null` here. FineWeb-2 also filters on a
+# language-identification score (0.84 for spa_Latn), which limpia does not
+# compute; run language identification upstream.
+
+language: es
+stopwords: es-fineweb2
+
+sources:
+  gopher:
+    citation: "Rae et al. (2021). Scaling Language Models: Methods, Analysis & Insights from Training Gopher. Appendix A."
+    url: "https://arxiv.org/abs/2112.11446"
+  fineweb:
+    citation: "Penedo et al. (2024). The FineWeb Datasets: Decanting the Web for the Finest Text Data at Scale."
+    url: "https://arxiv.org/abs/2406.17557"
+  fineweb2:
+    citation: "Penedo et al. (2025). FineWeb2: One Pipeline to Scale Them All -- Adapting Pre-Training Data Processing to Every Language."
+    url: "https://arxiv.org/abs/2506.20920"
+  fineweb2_spa_latn:
+    citation: "FineWeb-2 language config for spa_Latn (huggingface/fineweb-2, commit d0defb2)."
+    url: "https://github.com/huggingface/fineweb-2/blob/d0defb24f193bb9a5a11b8b14524a03c4858e1b6/configs/spa_Latn.yml"
+  fineweb2_pipeline:
+    citation: "FineWeb-2 filtering pipeline (huggingface/fineweb-2, commit d0defb2)."
+    url: "https://github.com/huggingface/fineweb-2/blob/d0defb24f193bb9a5a11b8b14524a03c4858e1b6/fineweb-2-pipeline.py"
+  datatrove_defaults:
+    citation: "datatrove filter defaults used by FineWeb-2 where its config is silent (huggingface/datatrove, commit 1977fbb)."
+    url: "https://github.com/huggingface/datatrove/tree/1977fbb0f3c163d43cace334b073dda17fa3ef26/src/datatrove/pipeline/filters"
+  limpia:
+    citation: "Regional adaptation in this repository (see rationale)."
+    url: "https://github.com/GonzaloFuentes1/limpia"
+
+gopher_quality:
+  min_words:
+    value: 50
+    source: datatrove_defaults
+    rationale: "GopherQualityFilter default min_doc_words; the FineWeb-2 pipeline does not override it."
+  max_words:
+    value: 100000
+    source: datatrove_defaults
+    rationale: "GopherQualityFilter default max_doc_words; the FineWeb-2 pipeline does not override it."
+  min_mean_word_length:
+    value: 3.0
+    source: fineweb2_spa_latn
+    rationale: "min_avg_word_length in the spa_Latn config."
+  max_mean_word_length:
+    value: 14.0
+    source: fineweb2_spa_latn
+    rationale: "max_avg_word_length in the spa_Latn config; higher than Gopher's 10."
+  max_symbol_word_ratio:
+    value: 0.1
+    source: datatrove_defaults
+    rationale: "GopherQualityFilter default, applied separately to '#' and to ellipses per word."
+  max_bullet_lines_ratio:
+    value: 0.9
+    source: datatrove_defaults
+    rationale: "GopherQualityFilter default; the bullet set below is limpia's."
+  max_ellipsis_lines_ratio:
+    value: 0.3
+    source: datatrove_defaults
+    rationale: "GopherQualityFilter default."
+  min_alpha_words_ratio:
+    value: 0.825
+    source: fineweb2_spa_latn
+    rationale: "max_non_alpha_words_ratio in the spa_Latn config (datatrove's name for the minimum fraction of words with a letter)."
+  min_stopwords:
+    value: 2
+    source: fineweb2_pipeline
+    rationale: "min_stop_words=2 in the FineWeb-2 pipeline, counted as distinct words from the spa_Latn stopword list."
+  bullet_prefixes:
+    value: ["•", "‣", "◦", "▪", "►", "-", "*"]
+    source: limpia
+    rationale: "datatrove counts lines starting with '•' or '-'; this set adds common bullet glyphs and excludes the em dash, which Spanish uses to open dialogue lines."
+
+gopher_repetition:
+  max_dup_line_frac:
+    value: 0.252
+    source: fineweb2_spa_latn
+    rationale: "dup_line_frac in the spa_Latn config."
+  max_dup_para_frac:
+    value: null
+    source: fineweb2_pipeline
+    rationale: "Disabled in the FineWeb-2 pipeline (dup_para_frac=0): trafilatura extraction removes most paragraph structure."
+  max_dup_line_char_frac:
+    value: null
+    source: fineweb2_pipeline
+    rationale: "Disabled in the FineWeb-2 pipeline (dup_line_char_frac=0) in favour of the FineWeb duplicated-line character rule."
+  max_dup_para_char_frac:
+    value: null
+    source: fineweb2_pipeline
+    rationale: "Disabled in the FineWeb-2 pipeline (dup_para_char_frac=0)."
+  max_top_ngram_char_frac:
+    value: {2: 0.156, 3: 0.14, 4: 0.125}
+    source: fineweb2_spa_latn
+    rationale: "top_n_grams in the spa_Latn config."
+  max_dup_ngram_char_frac:
+    value: {5: 0.145, 6: 0.136, 7: 0.127, 8: 0.117, 9: 0.108, 10: 0.099}
+    source: fineweb2_spa_latn
+    rationale: "dup_n_grams in the spa_Latn config."
+
+fineweb:
+  min_terminal_punct_ratio:
+    value: 0.182
+    source: fineweb2_spa_latn
+    rationale: "line_punct_thr in the spa_Latn config. datatrove removes when the ratio is < value; limpia uses <=, which differs only at exact equality."
+  max_short_line_ratio:
+    value: null
+    source: fineweb2_pipeline
+    rationale: "Disabled in the FineWeb-2 pipeline (short_line_thr=999)."
+  short_line_chars:
+    value: 30
+    source: datatrove_defaults
+    rationale: "FineWebQualityFilter default; unused while the short-line rule is disabled."
+  max_dup_line_char_frac:
+    value: 0.1
+    source: fineweb2_pipeline
+    rationale: "char_duplicates_ratio=0.1 in the FineWeb-2 pipeline (changed from 0.01 in FineWeb English)."
+  max_newline_word_ratio:
+    value: 0.138
+    source: fineweb2_spa_latn
+    rationale: "new_line_ratio in the spa_Latn config: newlines per word above it indicate list-like pages."
+  terminal_punctuation:
+    value: [".", "!", "?", "\"", "'", "…", "»", "”"]
+    source: limpia
+    rationale: "Same set as es.yaml. datatrove's default set has 159 sentence terminators across scripts; of the characters used in Spanish it contains only '.', '!' and '?'. This set adds straight end quotes (C4), the ellipsis character, the closing guillemet and the curly closing quote."

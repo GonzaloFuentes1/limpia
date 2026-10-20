@@ -84,11 +84,11 @@ gopher_repetition:
   max_top_ngram_char_frac:
     value: {2: 0.20, 3: 0.18, 4: 0.16}
     source: gopher
-    rationale: "Characters covered by the most frequent word n-gram; catches keyword stuffing."
+    rationale: "Characters in all occurrences of the most frequent word n-gram, over document length; catches keyword stuffing."
   max_dup_ngram_char_frac:
     value: {5: 0.15, 6: 0.14, 7: 0.13, 8: 0.12, 9: 0.11, 10: 0.10}
     source: gopher
-    rationale: "Characters covered by repeated word n-grams; catches templated and spun text."
+    rationale: "Characters in word n-grams that repeat an earlier one, over document length; catches templated and spun text."
 
 fineweb:
   min_terminal_punct_ratio:
@@ -107,7 +107,11 @@ fineweb:
     value: 0.10
     source: fineweb
     rationale: "Characters in duplicated lines; removed if fraction >= value."
+  max_newline_word_ratio:
+    value: null
+    source: fineweb
+    rationale: "Disabled: datatrove's FineWebQualityFilter has a list_ratio rule (newlines per word > 0.3), but the paper's section 3.6 lists only the three rules above, and this config follows the paper."
   terminal_punctuation:
     value: [".", "!", "?", "\"", "'", "…", "»", "”"]
     source: limpia
-    rationale: "FineWeb's sentence-final characters plus the ellipsis character and closing guillemet and curly quote, which Portuguese typography uses at the end of quoted sentences."
+    rationale: "Period, exclamation and question marks (the Latin-script terminators in datatrove's set) and straight end quotes (C4's terminal punctuation), plus the ellipsis character, closing guillemet and curly quote, which Portuguese typography uses at the end of quoted sentences."

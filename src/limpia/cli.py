@@ -118,7 +118,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser("run", help="stream documents through filters and transforms")
     io_args(run)
-    run.add_argument("--lang", default="es", help="bundled language (es, pt) or a YAML path")
+    run.add_argument(
+        "--lang",
+        default="es",
+        help="bundled config (es, pt, es-fineweb2, pt-fineweb2) or a YAML path",
+    )
     run.add_argument("--no-quality", action="store_true", help="skip the quality filters")
     run.add_argument("--exact-dedup", action="store_true", help="drop exact duplicates")
     run.add_argument("--pii", action="store_true", help="replace PII with typed tags")
