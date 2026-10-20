@@ -53,8 +53,8 @@ limpia dedup out/clean.jsonl out/dedup.jsonl --threshold 0.8 --report out/dedup_
 
 `examples/sample_es.jsonl` contains nine short, fictional documents. In the run above the
 report attributes every removal: a navigation menu and a one-line page fail the Gopher word
-count, a keyword-stuffed listing fails the FineWeb terminal-punctuation rule, an upper-cased
-mirror of a news item is an exact duplicate, and a study guide that quotes a benchmark item is
+count, a keyword-stuffed listing fails the Gopher stopword rule (its only Spanish function
+word is `en`), an upper-cased mirror of a news item is an exact duplicate, and a study guide that quotes a benchmark item is
 dropped by decontamination. In the surviving contact page the email, phone and valid RUT are
 replaced by `<EMAIL>`, `<PHONE>` and `<RUT>`, while the invalid RUT `12.345.678-9` is left
 alone. The second command removes a lightly edited copy of the news item.
@@ -89,11 +89,11 @@ differ in stopword lists and rationales.
 |---|---|---|---|
 | Word count | words < min or > max | 50 / 100,000 | Gopher |
 | Mean word length | mean < min or > max (characters) | 3 / 10 | Gopher |
-| Symbol-to-word ratio | (`#` + `...` + `…`) / words > max | 0.1 | Gopher |
+| Symbol-to-word ratio | `#` / words > max, or (`...` + `…`) / words > max | 0.1 | Gopher |
 | Bullet lines | fraction of lines starting with a bullet > max | 0.9 | Gopher; bullet set adapted |
 | Ellipsis lines | fraction of lines ending in an ellipsis > max | 0.3 | Gopher |
 | Alphabetic words | fraction of tokens containing a letter < min | 0.8 | Gopher |
-| Stopwords | occurrences of language stopwords < min | 2 | Gopher rule, per-language list as in FineWeb-2 |
+| Stopwords | distinct language stopwords present < min | 2 | Gopher rule, per-language list as in FineWeb-2 |
 | Duplicate lines | fraction > max; character fraction > max | 0.30; 0.20 | Gopher |
 | Duplicate paragraphs | fraction > max; character fraction > max | 0.30; 0.20 | Gopher |
 | Top n-gram characters | n = 2, 3, 4: fraction > max | 0.20, 0.18, 0.16 | Gopher |

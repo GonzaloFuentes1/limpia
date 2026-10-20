@@ -3,7 +3,7 @@ import random
 
 import pytest
 
-from fixtures import CLEAN_ES, CLEAN_PT, ENGLISH
+from fixtures import CLEAN_ES, CLEAN_PT, ENGLISH, ENGLISH_SHARED_STOPWORDS
 from limpia.config import load_language_config
 from limpia.document import Document
 from limpia.filters import (
@@ -49,7 +49,8 @@ def test_clean_text_passes_every_default_filter(cfg, text):
         ("Hola a todos, ¿cómo están?", "too_few_words"),
         (" ".join(["a y e o"] * 15), "short_mean_word_length"),
         (" ".join(["responsabilidades internacionalización"] * 30), "long_mean_word_length"),
-        (CLEAN_ES + " " + " ".join(f"#tendencia{i}" for i in range(30)), "symbol_word_ratio"),
+        (CLEAN_ES + " " + " ".join(f"#tendencia{i}" for i in range(30)), "hash_ratio"),
+        (CLEAN_ES + " " + " ".join(f"y así{i}…" for i in range(30)), "ellipsis_ratio"),
         (
             "\n".join(f"• Oferta {i} de zapatillas para correr con envío gratis" for i in range(9)),
             "bullet_lines",
@@ -88,8 +89,36 @@ def test_stopword_requirement_is_language_specific():
     # (de, que, para); the rule is a junk detector, not a language identifier.
     assert _check(_gq(PT), CLEAN_ES) is None
     m = _gq().measure(CLEAN_ES)
-    assert m["stopwords"] >= 30
-    assert _gq().measure(ENGLISH)["stopwords"] == 0
+    assert m["distinct_stopwords"] >= 20
+    assert _gq().measure(ENGLISH)["distinct_stopwords"] == 1
+
+
+def test_stopword_rule_counts_distinct_words():
+    # Gopher asks for "at least two of the following words": repeating one
+    # stopword many times does not satisfy it.
+    junk = " ".join(f"zapatilla{i} negra a talla grande" for i in range(12))
+    assert _gq().measure(junk)["distinct_stopwords"] == 1
+    assert _check(_gq(), junk) == "gopher_quality:too_few_stopwords"
+
+
+def test_stopword_rule_is_not_a_language_identifier():
+    assert _gq().measure(ENGLISH_SHARED_STOPWORDS)["distinct_stopwords"] == 2
+    for f in quality_filters(ES):
+        assert _check(f, ENGLISH_SHARED_STOPWORDS) is None, f.name
+
+
+def test_hash_and_ellipsis_ratios_are_separate():
+    # 100 words with 6 hashes and 6 ellipses: each ratio is 0.06, below 0.1,
+    # so Gopher keeps the document although the combined count is 0.12.
+    words = [f"palabra{i}" for i in range(100)]
+    for i in range(6):
+        words[i] = "#" + words[i]
+        words[50 + i] += "…"
+    m = _gq().measure(" ".join(words))
+    assert m["hash_word_ratio"] == pytest.approx(0.06)
+    assert m["ellipsis_word_ratio"] == pytest.approx(0.06)
+    q = dataclasses.replace(ES.gopher_quality, min_stopwords=0)
+    assert _check(GopherQualityFilter(q, ES.stopwords), " ".join(words)) is None
 
 
 def test_gopher_quality_measure_values():
@@ -97,7 +126,8 @@ def test_gopher_quality_measure_values():
     m = _gq().measure(text)
     assert m["n_words"] == 6
     assert m["mean_word_length"] == pytest.approx(len("unodostrescuatrocinco123") / 6)
-    assert m["symbol_word_ratio"] == pytest.approx(1 / 6)
+    assert m["hash_word_ratio"] == 0.0
+    assert m["ellipsis_word_ratio"] == pytest.approx(1 / 6)
     assert m["bullet_lines_ratio"] == pytest.approx(1 / 3)
     assert m["ellipsis_lines_ratio"] == pytest.approx(1 / 3)
     # Tokens: uno dos tres • cuatro... cinco 123 -> the bullet and the number lack letters.

@@ -26,4 +26,24 @@ CLEAN_PT = (
     "para qualquer pessoa que more na cidade."
 )
 
-ENGLISH = " ".join(["The quick brown fox jumps over the lazy dog."] * 8)
+# An ordinary English news paragraph. Of the Spanish stopwords it contains only
+# "a", so it fails the Spanish rule, which counts distinct stopwords.
+ENGLISH = (
+    "The town council approved next year's budget on Tuesday after a long debate about "
+    "library funding. Under the new plan, the central library will extend its opening hours "
+    "on weekends and convert a storage area into a reading room for students. Several "
+    "residents asked the council to keep a small cafe near the entrance, and the mayor said "
+    "the proposal would be reviewed in the spring. The budget also includes repairs to two "
+    "bridges and a pilot program for electric buses on the main avenue."
+)
+
+# English that happens to contain two Spanish stopwords ("a", "no"). It passes
+# the Spanish stopword rule: the rule removes junk, it does not identify the
+# language, so language identification has to run upstream.
+ENGLISH_SHARED_STOPWORDS = (
+    "There is no easy way to describe the new railway station. It has a glass roof, a "
+    "market on the lower floor and a long platform that bends along the river. Commuters "
+    "say that trains are more punctual than last year, although there are no plans yet to "
+    "add evening services on Sundays. The city expects the station to handle twice as many "
+    "passengers by the end of the decade."
+)
