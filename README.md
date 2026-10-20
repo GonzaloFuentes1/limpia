@@ -3,25 +3,33 @@
 [![CI](https://github.com/GonzaloFuentes1/limpia/actions/workflows/ci.yml/badge.svg)](https://github.com/GonzaloFuentes1/limpia/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Pretraining data curation for Spanish and Portuguese web text from Latin America. Public
-pipelines such as Gopher, C4 and FineWeb were designed and calibrated on English; when they are
-applied to Spanish as-is, some rules misfire for purely orthographic reasons (an English
-stopword list rejects every Spanish page, the em dash that opens a line of dialogue looks like
-a bullet, closing guillemets are not counted as sentence ends). `limpia` is a small, readable
-toolkit that implements the standard document heuristics with per-language thresholds whose
-provenance is recorded next to each value, plus exact and MinHash near-duplicate removal,
-PII scrubbing for Chilean identifiers and n-gram benchmark decontamination. It is pure Python
-and NumPy, streams JSONL, and every component is covered by invariant tests.
+Pretraining data curation for Spanish and Portuguese web text from Latin America. `limpia` is
+a small, readable toolkit that implements the Gopher and FineWeb document heuristics, exact and
+MinHash near-duplicate removal, PII scrubbing for Chilean identifiers and n-gram benchmark
+decontamination, with every threshold stored in YAML next to its source and rationale. It is
+pure Python and NumPy, streams JSONL, and every component is covered by tests.
+
+Per-language thresholds for these languages already exist: FineWeb-2 (Penedo et al., 2025)
+calibrated thresholds and stopword lists for `spa_Latn` and `por_Latn`, and `limpia` bundles
+them as the `es-fineweb2` and `pt-fineweb2` configs. The default `es` and `pt` configs keep the
+Gopher and FineWeb values published for English and change only what Spanish and Portuguese
+typography requires: a Spanish or Portuguese stopword list, the em dash that opens a line of
+dialogue is not a bullet, and closing guillemets, curly quotes and the ellipsis character end a
+sentence. These adaptations follow from how the languages are written; their effect on removal
+rates has not been measured on a real corpus. What `limpia` adds to existing pipelines is
+those three adaptations, Chilean PII rules (RUT with its check digit, `+56` phone numbers) and
+recorded provenance for every threshold.
 
 ## What it is / what it is not
 
 It is:
 
-- A reference implementation of Gopher and FineWeb quality rules, MinHash LSH deduplication,
+- A readable implementation of the Gopher and FineWeb quality rules as the papers describe
+  them (the differences from datatrove's code are listed below), MinHash LSH deduplication,
   regex PII scrubbing and 13-gram decontamination, with thresholds in auditable YAML.
 - Deterministic: same input and seed give byte-identical outputs and reports.
-- Small enough to read in an afternoon (about 1,700 lines of library code including
-  docstrings) and to adapt.
+- Small enough to read in an afternoon (about 1,800 lines of library code including
+  docstrings and blank lines) and to adapt.
 
 It is not:
 
@@ -29,8 +37,9 @@ It is not:
   [datatrove](https://github.com/huggingface/datatrove) or a similar framework and borrow the
   rules and thresholds from here.
 - A language identifier. The stopword rule removes junk, but Portuguese text passes the
-  Spanish rule and vice versa because the languages share function words. Run language
-  identification upstream.
+  Spanish rule and vice versa because the languages share function words, and English text
+  that happens to contain two Spanish stopwords (for example `a` and `no`) passes too. Run
+  language identification upstream.
 - A model-based quality classifier, a toxicity filter or a complete PII solution (names and
   street addresses are not detected).
 
@@ -110,13 +119,24 @@ The table below lists the `es` values.
 | Stopwords | distinct language stopwords present < min | 2 | Gopher rule, per-language list as in FineWeb-2 |
 | Duplicate lines | fraction > max; character fraction > max | 0.30; 0.20 | Gopher |
 | Duplicate paragraphs | fraction > max; character fraction > max | 0.30; 0.20 | Gopher |
-| Top n-gram characters | n = 2, 3, 4: fraction > max | 0.20, 0.18, 0.16 | Gopher |
-| Duplicated n-gram characters | n = 5 ... 10: fraction > max | 0.15 ... 0.10 | Gopher |
+| Top n-gram characters | n = 2, 3, 4: characters in all occurrences of the most frequent n-gram, as a fraction > max | 0.20, 0.18, 0.16 | Gopher |
+| Duplicated n-gram characters | n = 5 ... 10: characters in n-grams that repeat an earlier one, as a fraction > max | 0.15 ... 0.10 | Gopher |
 | Terminal punctuation | fraction of lines ending in it <= min | 0.12 | FineWeb; punctuation set adapted |
 | Short lines | fraction of lines under 30 characters >= max | 0.67 | FineWeb |
 | Duplicated line characters | fraction >= max | 0.10 | FineWeb |
+| Newlines per word | ratio > max | disabled (`null`) | datatrove's FineWeb filter; 0.138 in `es-fineweb2` |
 
-Regional adaptations, each marked with `source: limpia` in the YAML:
+Gopher's character fractions are divided by the document length `len(text)`, whitespace
+included, as in Gopher and datatrove; FineWeb's duplicated-line fraction is divided by the
+characters without newlines, as in datatrove. In the default stack, which runs the FineWeb line
+rules before the Gopher repetition rules, Gopher's duplicate-line character rule cannot fire:
+it divides the same duplicated-line characters by a denominator that is never smaller and uses
+a higher threshold, so FineWeb removes those documents first. It still applies when
+`GopherRepetitionFilter` runs on its own; the FineWeb-2 configs disable it, as FineWeb-2 does.
+
+Regional adaptations, each marked with `source: limpia` in the YAML. They are motivated by
+typography and tested on hand-written fixtures; how many real pages they keep or remove has not
+been measured:
 
 - **Stopwords.** Hand-written Spanish and Portuguese function-word lists replace Gopher's
   English list ([`resources/stopwords`](src/limpia/resources/stopwords)).
@@ -125,10 +145,30 @@ Regional adaptations, each marked with `source: limpia` in the YAML:
 - **Closing marks.** `»`, `”` and `…` count as terminal punctuation, so quoted sentences in
   Spanish typography are not treated as unterminated list items.
 
-Comparison directions follow the papers: Gopher uses strict `>` / `<`, FineWeb uses `<=` and
-`>=`. Each filter exposes `measure(text)` (raw statistics) separately from `check(doc)` (the
+Comparison directions follow the papers: Gopher uses strict `>` / `<`, and the FineWeb rules
+use `<=` and `>=` as worded in section 3.6 of the FineWeb paper. Each filter exposes `measure(text)` (raw statistics) separately from `check(doc)` (the
 decision), so statistics can be logged and thresholds recalibrated on local data before they
 are enforced.
+
+Differences from [datatrove](https://github.com/huggingface/datatrove/tree/1977fbb0f3c163d43cace334b073dda17fa3ef26/src/datatrove/pipeline/filters),
+whose `GopherQualityFilter`, `GopherRepetitionFilter` and `FineWebQualityFilter` produced
+FineWeb and FineWeb-2. Results are close to, not identical with, theirs:
+
+| Rule | datatrove | limpia |
+|---|---|---|
+| FineWeb terminal punctuation | removed if ratio < 0.12 | removed if ratio <= 0.12 (paper wording) |
+| FineWeb short lines | ratio > 0.67, short means `len(line) <= 30` | ratio >= 0.67, short means `len(line) < 30` (paper wording) |
+| FineWeb duplicated-line characters | > 0.01 in FineWeb (0.1 in FineWeb-2) | >= 0.10 (paper) |
+| FineWeb list ratio (newlines per word) | > 0.3 | not in the paper; disabled in `es` / `pt`, used in the FineWeb-2 configs |
+| Terminal punctuation set | 159 terminators across scripts; for Spanish only `.`, `!`, `?` | `.`, `!`, `?`, straight end quotes, `…`, `»`, `”` |
+| Bullet lines | lines starting with `•` or `-` | the YAML bullet set (adds `‣`, `◦`, `▪`, `►`, `*`), never the em dash |
+| Words | language-specific word tokenizer | whitespace split with leading and trailing punctuation stripped |
+| Lines | split on newlines, not stripped | stripped, blank lines dropped |
+| Duplicated n-gram characters | scans left to right and skips `n` words after each repeated n-gram | every word inside a repeated occurrence counts once, overlaps included |
+| Top n-gram without repetition | `len(ngram) / len(text)` | 0 |
+| Order of Gopher repetition rules | paragraphs, then lines | lines, then paragraphs (changes only which reason is reported) |
+
+No test runs datatrove itself; the table comes from reading its source at the linked commit.
 
 ## Deduplication
 
@@ -189,9 +229,12 @@ indistinguishable from an IPv4 address and is replaced. Names and addresses are 
 ## Benchmark decontamination
 
 Benchmark texts are normalized like documents and their word 13-grams are hashed into an
-index (the n-gram length used for GPT-3's contamination analysis). A document is contaminated
-if it has at least `--decontam-min-matches` matching n-grams and the matching fraction reaches
-`--decontam-min-fraction` (defaults: one match, any fraction). `--decontam-mode flag` keeps the
+index (13-gram overlap is what was used to filter GPT-3's training data; Brown et al., 2020,
+Appendix C). A document is contaminated if it has at least `--decontam-min-matches` matching
+n-grams and the matching fraction reaches `--decontam-min-fraction`. The default (one match,
+any fraction) drops the whole document on any 13-gram match, which is stricter than GPT-3:
+GPT-3 removed the colliding 13-gram with a 200-character window around it and discarded only
+documents split into more than ten pieces. `--decontam-mode flag` keeps the
 document and records `{"matched_ngrams", "total_ngrams", "flagged"}` in its metadata instead of
 dropping it. Benchmark items shorter than 13 words cannot be indexed; they are counted in
 `NGramIndex.skipped_short` so that the caller can lower `n` for benchmarks with short items.
@@ -211,19 +254,27 @@ implementation:
   expansion of `P(s)` to 1e-7, and the chosen `(b, r)` equals the exact brute-force optimum.
 - **Clustering.** Union-find equals BFS connected components on random graphs; pairwise
   precision and recall equal brute-force pair enumeration.
-- **Filters.** Every rule has a Spanish fixture that fails with that rule's specific reason, a
-  clean Spanish and a clean Portuguese text pass every rule, the repetition statistics equal
-  brute-force implementations on random inputs, and the Gopher thresholds are asserted against
-  the paper's values.
+- **Filters.** Every removal reason has a fixture asserted against that exact reason, and a
+  guard test checks that every reason in the filter source has one; most fixtures are Spanish
+  text, the n-gram repetition fixtures are synthetic. A clean Spanish and a clean Portuguese
+  text pass every rule under all four configs. The duplicated n-gram statistic equals a
+  brute-force reference on random inputs; the top n-gram statistic equals a reference written
+  from Gopher's definition and hand-computed cases, including a frequent short n-gram next to a
+  longer, less frequent one; the `len(text)` denominators are pinned on a hand-computed example.
+  The Gopher thresholds are asserted against the paper's values and the FineWeb-2 values
+  against the upstream configs.
 - **PII.** The RUT check digit agrees with an independent formulation on 2,500 random bodies;
   randomized valid RUTs are replaced while the same bodies with a wrong check digit are kept;
-  phone, IP and number negatives; scrubbing is idempotent.
+  phone, IP and number negatives, including longer numbers after `+56`, digits split across
+  lines and labelled version or section numbers; scrubbing is idempotent.
 - **Decontamination.** Planted, reformatted benchmark passages are recovered, clean text is
   untouched, and overlap counts equal an unhashed reference.
 - **Pipeline and CLI.** `kept + removed == seen` for every step and counts chain across
-  steps; reports and outputs are byte-identical across runs; JSONL round-trips unknown fields.
-- **Documentation.** A test re-renders the benchmark table below from
-  `results/dedup_bench.json` and fails if the README differs.
+  steps; reports and outputs (including `.jsonl.gz`, with LF line endings) are byte-identical
+  across runs; JSONL round-trips unknown fields.
+- **Documentation.** A test re-renders the benchmark tables below from
+  `results/dedup_bench.json` and fails if the README differs or the markers are missing. The
+  benchmark's S-curve agreement is also tested on a separate seeded run.
 
 CI runs `ruff check`, `ruff format --check` and `pytest` on Python 3.11 and 3.12 (CPU only).
 
@@ -353,8 +404,8 @@ examples/            sample corpus and toy benchmark file
   [arXiv:2107.06499](https://arxiv.org/abs/2107.06499)
 - A. Z. Broder. *On the resemblance and containment of documents.* Compression and Complexity
   of Sequences, 1997. [doi:10.1109/SEQUEN.1997.666900](https://doi.org/10.1109/SEQUEN.1997.666900)
-- T. B. Brown et al. *Language Models are Few-Shot Learners.* 2020 (13-gram contamination
-  analysis). [arXiv:2005.14165](https://arxiv.org/abs/2005.14165)
+- T. B. Brown et al. *Language Models are Few-Shot Learners.* 2020 (Appendix C: 13-gram
+  training-set filtering). [arXiv:2005.14165](https://arxiv.org/abs/2005.14165)
 - J. Leskovec, A. Rajaraman, J. D. Ullman. *Mining of Massive Datasets*, chapter 3 (LSH
   banding). [mmds.org](http://www.mmds.org/)
 - [huggingface/datatrove](https://github.com/huggingface/datatrove),

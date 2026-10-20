@@ -1,10 +1,11 @@
 """Benchmark decontamination by n-gram overlap.
 
 Training on evaluation data inflates benchmark scores without improving the
-model. The standard check, used for GPT-3 with 13-grams, is to look for long
-word n-grams shared between a training document and any benchmark example: a
-13-gram match is very unlikely to happen by chance in natural text, so it is a
-high-precision signal of leakage.
+model. The standard check, used with 13-grams to filter GPT-3's training data
+(Brown et al., 2020, Appendix C), is to look for long word n-grams shared
+between a training document and any benchmark example: a 13-gram match is very
+unlikely to happen by chance in natural text, so it is a high-precision signal
+of leakage.
 
 Both sides are normalized identically (NFKC, casefold, punctuation removed) so
 that a leaked passage is still found after reformatting. Only hashes of the
@@ -75,7 +76,10 @@ class ContaminationPolicy:
     """A document is contaminated if it has at least ``min_matches`` matching
     n-grams and the matching fraction reaches ``min_fraction``.
 
-    The default (any single match) is the conservative GPT-3 rule; raising
+    The default (any single match) drops the whole document, which is
+    stricter than GPT-3: GPT-3 removed the colliding 13-gram with a
+    200-character window around it and discarded only documents split into
+    more than ten pieces (Brown et al., 2020, Appendix C). Raising
     ``min_fraction`` tolerates documents that merely quote a benchmark sentence
     inside a long, otherwise clean text.
     """

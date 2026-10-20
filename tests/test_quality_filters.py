@@ -34,7 +34,15 @@ def _check(f, text):
 # --------------------------------------------------------------------------- clean text
 
 
-@pytest.mark.parametrize(("cfg", "text"), [(ES, CLEAN_ES), (PT, CLEAN_PT)])
+@pytest.mark.parametrize(
+    ("cfg", "text"),
+    [
+        (ES, CLEAN_ES),
+        (PT, CLEAN_PT),
+        (load_language_config("es-fineweb2"), CLEAN_ES),
+        (load_language_config("pt-fineweb2"), CLEAN_PT),
+    ],
+)
 def test_clean_text_passes_every_default_filter(cfg, text):
     for f in quality_filters(cfg):
         assert _check(f, text) is None, f.name

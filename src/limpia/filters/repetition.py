@@ -52,7 +52,7 @@ def top_ngram_char_fraction(words: Sequence[str], n: int, *, total_chars: int) -
     repetition, so a document without repeated n-grams scores 0 (datatrove
     scores ``len(ngram) / len(text)`` there, which is far below any threshold
     for documents that pass the minimum word count). Overlapping occurrences
-    (``"a a a"``) are counted separately, as in the reference implementation,
+    (``"a a a"``) are counted separately, as in datatrove,
     so the value is clipped at 1.
     """
     if total_chars <= 0 or len(words) < n:
