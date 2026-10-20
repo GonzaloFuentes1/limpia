@@ -1,11 +1,15 @@
 {
   "limpia_version": "0.1.0",
-  "command": "python benchmarks/dedup_bench.py --n-clusters 2000 --max-copies 4 --seed 0 --num-perm 128 --ngram 5",
+  "command": "python benchmarks/dedup_bench.py --n-clusters 2000 --max-copies 4 --seed 0 --num-perm 128 --ngram 5 --n-template-groups 300 --repeats 7",
   "corpus": {
-    "documents": 5940,
+    "documents": 6819,
+    "mean_words_per_document": 102.22701275846899,
     "clusters": 2000,
     "originals": 2000,
     "copies": 3940,
+    "template_groups": 300,
+    "template_pages": 879,
+    "template_pairs": 951,
     "edit_levels": [
       0.0,
       0.01,
@@ -14,6 +18,12 @@
       0.1,
       0.2
     ],
+    "template_shares": [
+      0.5,
+      0.7,
+      0.85,
+      0.95
+    ],
     "mean_jaccard_by_edit_rate": {
       "0.00": 1.0,
       "0.01": 0.7912728603294971,
@@ -21,6 +31,12 @@
       "0.05": 0.5863379560354589,
       "0.10": 0.4060604074754503,
       "0.20": 0.22702148098721003
+    },
+    "mean_jaccard_by_template_share": {
+      "0.50": 0.29328165726411076,
+      "0.70": 0.4930294128150895,
+      "0.85": 0.686465424385963,
+      "0.95": 0.8453857572902006
     }
   },
   "params": {
@@ -29,10 +45,14 @@
     "unit": "word",
     "seed": 0
   },
+  "timing": {
+    "repeats": 7,
+    "statistic": "median"
+  },
   "hardware": {
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
     "platform": "Windows-11-10.0.26200-SP0",
     "machine": "AMD64",
-    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel",
     "cpu_count": 16,
     "python": "3.12.13",
     "numpy": "2.5.4"
@@ -53,19 +73,30 @@
         "0.10": 0.0,
         "0.20": 0.0
       },
-      "seconds": 0.428276399965398,
-      "docs_per_sec": 13869.547797823821
+      "template_pairs_merged": 0.0,
+      "seconds_median": 1.9724778999807313,
+      "seconds_runs": [
+        0.4737652000039816,
+        1.0303934999974445,
+        2.0117698999820277,
+        2.006992199982051,
+        1.8185221999883652,
+        1.9724778999807313,
+        2.0474482999998145
+      ],
+      "docs_per_sec": 3457.0729538042547,
+      "words_per_sec": 353406.2409555056
     },
     {
       "method": "minhash",
       "threshold": 0.6,
       "bands": 18,
       "rows": 7,
-      "precision": 1.0,
+      "precision": 0.8735047846889952,
       "recall": 0.3729570990806946,
-      "f1": 0.5432902445829071,
+      "f1": 0.5227272727272727,
       "true_pairs": 7832.0,
-      "predicted_pairs": 2921.0,
+      "predicted_pairs": 3344.0,
       "recall_by_edit_rate": {
         "0.00": 1.0,
         "0.01": 0.8470031545741324,
@@ -74,20 +105,119 @@
         "0.10": 0.06502890173410404,
         "0.20": 0.003289473684210526
       },
-      "seconds": 3.1453588000149466,
-      "signature_seconds": 2.62118980003288,
-      "docs_per_sec": 1888.496790881782
+      "copies_at_or_above_t": 2080,
+      "copies_at_or_above_t_merged": 0.8581730769230769,
+      "copies_below_t": 1860,
+      "copies_below_t_merged": 0.08279569892473118,
+      "template_pairs_at_or_above_t": 421,
+      "template_pairs_at_or_above_t_merged": 0.9453681710213777,
+      "template_pairs_below_t": 530,
+      "template_pairs_below_t_merged": 0.04716981132075472,
+      "template_pairs_merged": 0.444794952681388,
+      "scurve": [
+        {
+          "bin": "0.0-0.1",
+          "pairs": 5,
+          "predicted": 9.585546011603442e-07,
+          "predicted_se": 0.00043784777980542065,
+          "measured": 0.0
+        },
+        {
+          "bin": "0.1-0.2",
+          "pairs": 190,
+          "predicted": 9.37501287842114e-05,
+          "predicted_se": 0.0007023900729224875,
+          "measured": 0.0
+        },
+        {
+          "bin": "0.2-0.3",
+          "pairs": 627,
+          "predicted": 0.0019860572585793444,
+          "predicted_se": 0.0017773019796441167,
+          "measured": 0.003189792663476874
+        },
+        {
+          "bin": "0.3-0.4",
+          "pairs": 382,
+          "predicted": 0.013144315382529477,
+          "predicted_se": 0.005813950979682563,
+          "measured": 0.015706806282722512
+        },
+        {
+          "bin": "0.4-0.5",
+          "pairs": 661,
+          "predicted": 0.08365338862179479,
+          "predicted_se": 0.010691965615180217,
+          "measured": 0.06505295007564296
+        },
+        {
+          "bin": "0.5-0.6",
+          "pairs": 525,
+          "predicted": 0.2496742700661105,
+          "predicted_se": 0.018538284843664588,
+          "measured": 0.22285714285714286
+        },
+        {
+          "bin": "0.6-0.7",
+          "pairs": 733,
+          "predicted": 0.6214489841816644,
+          "predicted_se": 0.01736928130291842,
+          "measured": 0.6289222373806276
+        },
+        {
+          "bin": "0.7-0.8",
+          "pairs": 482,
+          "predicted": 0.901864030451986,
+          "predicted_se": 0.013288035591545316,
+          "measured": 0.8692946058091287
+        },
+        {
+          "bin": "0.8-0.9",
+          "pairs": 457,
+          "predicted": 0.9975891370486948,
+          "predicted_se": 0.0022891323133228327,
+          "measured": 0.9978118161925602
+        },
+        {
+          "bin": "0.9-1.0",
+          "pairs": 829,
+          "predicted": 0.9999997930136992,
+          "predicted_se": 1.5801297510207534e-05,
+          "measured": 1.0
+        }
+      ],
+      "seconds_median": 9.982896400033496,
+      "signature_seconds_runs": [
+        9.476245100027882,
+        11.762320199981332,
+        11.801156899950001,
+        8.24402809998719,
+        9.410760600003414,
+        7.996995000052266,
+        8.567996300000232
+      ],
+      "cluster_seconds_runs": [
+        0.6345992999849841,
+        0.5139357000007294,
+        0.5050313000101596,
+        0.6054764000000432,
+        0.5721358000300825,
+        0.5208840999985114,
+        0.5770696999970824
+      ],
+      "docs_per_sec": 683.0682926827849,
+      "words_per_sec": 69828.03107098868
     },
     {
       "method": "minhash",
       "threshold": 0.7,
       "bands": 14,
       "rows": 9,
-      "precision": 1.0,
+      "precision": 0.8654471544715447,
       "recall": 0.27183350357507663,
-      "f1": 0.4274671217749222,
+      "f1": 0.4137193937038477,
       "true_pairs": 7832.0,
-      "predicted_pairs": 2129.0,
+      "predicted_pairs": 2460.0,
       "recall_by_edit_rate": {
         "0.00": 1.0,
         "0.01": 0.7113564668769716,
@@ -96,20 +226,119 @@
         "0.10": 0.015895953757225433,
         "0.20": 0.0
       },
-      "seconds": 3.04753849998815,
-      "signature_seconds": 2.62118980003288,
-      "docs_per_sec": 1949.1140144818835
+      "copies_at_or_above_t": 1527,
+      "copies_at_or_above_t_merged": 0.876882776686313,
+      "copies_below_t": 2413,
+      "copies_below_t_merged": 0.0741815167840862,
+      "template_pairs_at_or_above_t": 241,
+      "template_pairs_at_or_above_t_merged": 0.983402489626556,
+      "template_pairs_below_t": 710,
+      "template_pairs_below_t_merged": 0.1323943661971831,
+      "template_pairs_merged": 0.3480546792849632,
+      "scurve": [
+        {
+          "bin": "0.0-0.1",
+          "pairs": 5,
+          "predicted": 6.619646675254387e-09,
+          "predicted_se": 3.638583958679565e-05,
+          "measured": 0.0
+        },
+        {
+          "bin": "0.1-0.2",
+          "pairs": 190,
+          "predicted": 2.4799617394532484e-06,
+          "predicted_se": 0.00011424699145407427,
+          "measured": 0.0
+        },
+        {
+          "bin": "0.2-0.3",
+          "pairs": 627,
+          "predicted": 0.0001233724226450781,
+          "predicted_se": 0.0004435413573466439,
+          "measured": 0.0
+        },
+        {
+          "bin": "0.3-0.4",
+          "pairs": 382,
+          "predicted": 0.001394560454087481,
+          "predicted_se": 0.001908643250677812,
+          "measured": 0.002617801047120419
+        },
+        {
+          "bin": "0.4-0.5",
+          "pairs": 661,
+          "predicted": 0.01525366856607016,
+          "predicted_se": 0.004757943503466145,
+          "measured": 0.018154311649016642
+        },
+        {
+          "bin": "0.5-0.6",
+          "pairs": 525,
+          "predicted": 0.06860992440422833,
+          "predicted_se": 0.01094467784971939,
+          "measured": 0.06666666666666667
+        },
+        {
+          "bin": "0.6-0.7",
+          "pairs": 733,
+          "predicted": 0.2867503122547718,
+          "predicted_se": 0.01634174656854295,
+          "measured": 0.28240109140518416
+        },
+        {
+          "bin": "0.7-0.8",
+          "pairs": 482,
+          "predicted": 0.638406230278915,
+          "predicted_se": 0.02117657756537055,
+          "measured": 0.6058091286307054
+        },
+        {
+          "bin": "0.8-0.9",
+          "pairs": 457,
+          "predicted": 0.9626519213885566,
+          "predicted_se": 0.008748074501888468,
+          "measured": 0.975929978118162
+        },
+        {
+          "bin": "0.9-1.0",
+          "pairs": 829,
+          "predicted": 0.9999606740049,
+          "predicted_se": 0.00021775030280705402,
+          "measured": 1.0
+        }
+      ],
+      "seconds_median": 9.866050500015263,
+      "signature_seconds_runs": [
+        9.476245100027882,
+        11.762320199981332,
+        11.801156899950001,
+        8.24402809998719,
+        9.410760600003414,
+        7.996995000052266,
+        8.567996300000232
+      ],
+      "cluster_seconds_runs": [
+        0.45528990001184866,
+        0.48288399999728426,
+        0.49975680001080036,
+        0.4357662000111304,
+        0.425762599974405,
+        0.5069440000224859,
+        0.43408060004003346
+      ],
+      "docs_per_sec": 691.1580272155967,
+      "words_per_sec": 70655.02046628705
     },
     {
       "method": "minhash",
       "threshold": 0.8,
       "bands": 9,
       "rows": 13,
-      "precision": 1.0,
+      "precision": 0.8724874371859297,
       "recall": 0.1773493360572012,
-      "f1": 0.3012688428586921,
+      "f1": 0.29477928692699495,
       "true_pairs": 7832.0,
-      "predicted_pairs": 1389.0,
+      "predicted_pairs": 1592.0,
       "recall_by_edit_rate": {
         "0.00": 1.0,
         "0.01": 0.4921135646687697,
@@ -118,9 +347,108 @@
         "0.10": 0.001445086705202312,
         "0.20": 0.0
       },
-      "seconds": 2.864092600008007,
-      "signature_seconds": 2.62118980003288,
-      "docs_per_sec": 2073.9552904062507
+      "copies_at_or_above_t": 1053,
+      "copies_at_or_above_t_merged": 0.9240265906932573,
+      "copies_below_t": 2887,
+      "copies_below_t_merged": 0.03810183581572567,
+      "template_pairs_at_or_above_t": 233,
+      "template_pairs_at_or_above_t_merged": 0.7982832618025751,
+      "template_pairs_below_t": 718,
+      "template_pairs_below_t_merged": 0.023676880222841225,
+      "template_pairs_merged": 0.21345951629863302,
+      "scurve": [
+        {
+          "bin": "0.0-0.1",
+          "pairs": 5,
+          "predicted": 3.505196133346544e-13,
+          "predicted_se": 2.647714536480277e-07,
+          "measured": 0.0
+        },
+        {
+          "bin": "0.1-0.2",
+          "pairs": 190,
+          "predicted": 1.954710551316533e-09,
+          "predicted_se": 3.2074834727424434e-06,
+          "measured": 0.0
+        },
+        {
+          "bin": "0.2-0.3",
+          "pairs": 627,
+          "predicted": 5.307110620148723e-07,
+          "predicted_se": 2.9093441202181283e-05,
+          "measured": 0.0
+        },
+        {
+          "bin": "0.3-0.4",
+          "pairs": 382,
+          "predicted": 1.7432621495012994e-05,
+          "predicted_se": 0.00021362025691892115,
+          "measured": 0.0
+        },
+        {
+          "bin": "0.4-0.5",
+          "pairs": 661,
+          "predicted": 0.0005184918055209347,
+          "predicted_se": 0.0008853397287678159,
+          "measured": 0.0015128593040847202
+        },
+        {
+          "bin": "0.5-0.6",
+          "pairs": 525,
+          "predicted": 0.0047076374467821145,
+          "predicted_se": 0.0029843460428143932,
+          "measured": 0.0038095238095238095
+        },
+        {
+          "bin": "0.6-0.7",
+          "pairs": 733,
+          "predicted": 0.04305220953426576,
+          "predicted_se": 0.007453869487218351,
+          "measured": 0.045020463847203276
+        },
+        {
+          "bin": "0.7-0.8",
+          "pairs": 482,
+          "predicted": 0.1928799223445815,
+          "predicted_se": 0.017582258684977432,
+          "measured": 0.18464730290456433
+        },
+        {
+          "bin": "0.8-0.9",
+          "pairs": 457,
+          "predicted": 0.6661126944813364,
+          "predicted_se": 0.021248251269642686,
+          "measured": 0.6936542669584245
+        },
+        {
+          "bin": "0.9-1.0",
+          "pairs": 829,
+          "predicted": 0.9951472852642058,
+          "predicted_se": 0.002372551181209089,
+          "measured": 0.9951749095295537
+        }
+      ],
+      "seconds_median": 9.67805230000522,
+      "signature_seconds_runs": [
+        9.476245100027882,
+        11.762320199981332,
+        11.801156899950001,
+        8.24402809998719,
+        9.410760600003414,
+        7.996995000052266,
+        8.567996300000232
+      ],
+      "cluster_seconds_runs": [
+        0.34190609998768196,
+        0.31555639998987317,
+        0.33624370000325143,
+        0.267291700001806,
+        0.22590600000694394,
+        0.21460140001727268,
+        0.2432046000030823
+      ],
+      "docs_per_sec": 704.5839171582409,
+      "words_per_sec": 72027.50908874754
     }
   ]
 }
