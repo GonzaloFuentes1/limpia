@@ -107,9 +107,8 @@ def test_gopher_quality_measure_values():
 # -------------------------------------------------------- repetition: parity tests
 
 
-def _ref_duplicated_ngram_char_fraction(words, n):
+def _ref_duplicated_ngram_char_fraction(words, n, total):
     """Brute force: a word is covered if some n-gram containing it occurred earlier."""
-    total = sum(len(w) for w in words)
     if total == 0 or len(words) < n:
         return 0.0
     covered = 0
@@ -120,15 +119,22 @@ def _ref_duplicated_ngram_char_fraction(words, n):
     return covered / total
 
 
-def _ref_top_ngram_char_fraction(words, n):
-    total = sum(len(w) for w in words)
-    grams = [tuple(words[i : i + n]) for i in range(len(words) - n + 1)]
-    best = 0
-    for g in set(grams):
-        c = grams.count(g)
-        if c > 1:
-            best = max(best, c * sum(map(len, g)))
-    return min(best / total, 1.0) if total else 0.0
+def _ref_top_ngram_char_fraction(words, n, total):
+    """Written from Gopher's sentence, not from the implementation.
+
+    "The fraction of characters contained within the most frequently-occurring
+    n-gram" (Rae et al., 2021, Appendix A): find the highest frequency, take
+    the first n-gram (in text order) with that frequency, and count the
+    characters of all its occurrences. A frequency of one is no repetition.
+    """
+    grams = [" ".join(words[i : i + n]) for i in range(len(words) - n + 1)]
+    if not grams or total == 0:
+        return 0.0
+    top = max(grams.count(g) for g in grams)
+    if top < 2:
+        return 0.0
+    first = next(g for g in grams if grams.count(g) == top)
+    return min(top * len(first) / total, 1.0)
 
 
 @pytest.mark.parametrize("seed", range(25))
@@ -136,21 +142,77 @@ def test_repetition_statistics_match_brute_force(seed):
     rng = random.Random(seed)
     vocab = ["el", "perro", "come", "pan", "y", "agua", "fría", "sol"][: rng.randint(2, 8)]
     words = [rng.choice(vocab) for _ in range(rng.randint(0, 40))]
+    total = len(" ".join(words))
     for n in range(1, 8):
-        assert duplicated_ngram_char_fraction(words, n) == pytest.approx(
-            _ref_duplicated_ngram_char_fraction(words, n)
+        dup = duplicated_ngram_char_fraction(words, n, total_chars=total)
+        assert dup == pytest.approx(_ref_duplicated_ngram_char_fraction(words, n, total))
+        assert top_ngram_char_fraction(words, n, total_chars=total) == pytest.approx(
+            _ref_top_ngram_char_fraction(words, n, total)
         )
-        assert top_ngram_char_fraction(words, n) == pytest.approx(
-            _ref_top_ngram_char_fraction(words, n)
-        )
-        assert 0.0 <= duplicated_ngram_char_fraction(words, n) <= 1.0
+        assert 0.0 <= dup <= 1.0
+
+
+def test_top_ngram_uses_the_most_frequent_ngram_not_the_largest_coverage():
+    # "x y" occurs three times (3 * 3 = 9 characters); "universidad nacional"
+    # occurs only twice but covers 2 * 20 = 40 characters. Gopher scores the
+    # most frequent n-gram, so the answer is 9 / len(text).
+    text = "x y x y x y la universidad nacional la universidad nacional"
+    words = text.split()
+    assert top_ngram_char_fraction(words, 2, total_chars=len(text)) == pytest.approx(9 / len(text))
+    # Ties go to the first n-gram in text order: "ab" before "cd".
+    tie = "ab cd ab cd ef"
+    assert top_ngram_char_fraction(tie.split(), 1, total_chars=len(tie)) == pytest.approx(4 / 14)
+    assert top_ngram_char_fraction(tie.split(), 2, total_chars=len(tie)) == pytest.approx(10 / 14)
+    assert top_ngram_char_fraction(["a", "b", "c"], 2, total_chars=5) == 0.0
+
+
+def test_character_fractions_divide_by_document_length():
+    # len(text) = 7 + 1 + 7 + 1 + 4 = 20, including the two newlines.
+    text = "uno dos\nuno dos\ntres"
+    m = GopherRepetitionFilter(ES.gopher_repetition).measure(text)
+    assert m["dup_line_frac"] == pytest.approx(1 / 3)
+    assert m["dup_line_char_frac"] == pytest.approx(7 / 20)
+    # "uno dos" twice: 2 * 7 characters.
+    assert m["top_2gram_char_frac"] == pytest.approx(14 / 20)
+    # FineWeb divides by the characters without newlines, as datatrove does.
+    assert FineWebLineFilter(ES.fineweb).measure(text)["dup_line_char_frac"] == pytest.approx(
+        7 / 18
+    )
+
+
+# A natural paragraph that repeats one long phrase three times. Gopher's
+# statistic gives top 4-gram 3 * len("el programa de reciclaje") / len(text),
+# well under 0.16; scoring the n-gram with the largest coverage instead picks
+# "programa de reciclaje domiciliario" and rejects the paragraph.
+MUNICIPAL_NEWS = (
+    "La municipalidad de Valle Hermoso informó este lunes que el programa de reciclaje "
+    "domiciliario llegará a todos los barrios de la comuna antes de fin de año. Según el "
+    "alcalde, el programa de reciclaje domiciliario ya recibe más de cuatro toneladas de "
+    "residuos cada semana. Los vecinos pueden inscribirse en la oficina de medio ambiente o en "
+    "el sitio web de la municipalidad. La encargada del proyecto explicó que el programa de "
+    "reciclaje domiciliario funciona con camiones propios y con recicladores de base que "
+    "reciben un pago mensual. La próxima etapa incluirá puntos limpios en las escuelas y en la "
+    "plaza central de la comuna."
+)
+
+
+def test_natural_paragraph_with_a_repeated_phrase_passes():
+    f = GopherRepetitionFilter(ES.gopher_repetition)
+    m = f.measure(MUNICIPAL_NEWS)
+    total = len(MUNICIPAL_NEWS)
+    assert m["top_4gram_char_frac"] == pytest.approx(3 * len("el programa de reciclaje") / total)
+    assert m["top_4gram_char_frac"] < 0.16
+    largest_coverage = 3 * len("programa de reciclaje domiciliario") / total
+    assert largest_coverage > 0.16
+    for step in quality_filters(ES):
+        assert _check(step, MUNICIPAL_NEWS) is None, step.name
 
 
 def test_duplicate_fractions_counts_only_repeats():
-    frac, char_frac = duplicate_fractions(["abc", "de", "abc", "abc", "f"])
+    frac, char_frac = duplicate_fractions(["abc", "de", "abc", "abc", "f"], total_chars=16)
     assert frac == pytest.approx(2 / 5)
-    assert char_frac == pytest.approx(6 / 12)
-    assert duplicate_fractions([]) == (0.0, 0.0)
+    assert char_frac == pytest.approx(6 / 16)
+    assert duplicate_fractions([], total_chars=0) == (0.0, 0.0)
 
 
 # ------------------------------------------------------------- Gopher repetition
@@ -183,7 +245,7 @@ def test_paragraph_statistics():
     text = "Primer párrafo.\n\nSegundo párrafo largo.\n\nPrimer párrafo."
     m = GopherRepetitionFilter(ES.gopher_repetition).measure(text)
     assert m["dup_para_frac"] == pytest.approx(1 / 3)
-    assert m["dup_para_char_frac"] == pytest.approx(15 / (15 + 22 + 15))
+    assert m["dup_para_char_frac"] == pytest.approx(15 / len(text))
 
 
 # --------------------------------------------------------------------- FineWeb

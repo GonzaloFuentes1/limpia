@@ -20,6 +20,13 @@ def quality_filters(config: LanguageConfig) -> list[Filter]:
 
     Gopher quality rules are O(n) and remove most junk, so they run before the
     n-gram repetition statistics, which are the most expensive.
+
+    With the bundled thresholds, Gopher's duplicate-line character rule cannot
+    fire in this order: it divides the same duplicated-line characters by
+    ``len(text)``, which is at least FineWeb's denominator, and its threshold
+    (``> 0.20``) is above FineWeb's (``>= 0.10``), so FineWeb removes every such
+    document first. The rule is kept for callers that run
+    ``GopherRepetitionFilter`` on its own.
     """
     return [
         GopherQualityFilter(config.gopher_quality, config.stopwords),
