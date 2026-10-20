@@ -81,11 +81,50 @@ def test_chilean_phone_formats(phone):
         "+56 9 1234 56789",  # ten digits
         "+1 415 555 0100",  # other country
         "9 8765 4321",  # no country code: too ambiguous with other numbers
+        "+56 9 1234 5678 9",  # ten digits with a separator before the last one
+        "+56 2 2345 6789 0",
+        "+56 9 1234-5678-9",
+        "+56 9 1234\n5678",  # digits on two lines are not one number
     ],
 )
 def test_phone_negatives(not_phone):
     text = f"Número: {not_phone}."
     assert scrub(text)[0] == text
+
+
+def test_longer_number_after_a_prefix_is_left_whole():
+    text = "fax +56 2 2345 6789 0 y celular +56 9 8765 4321."
+    assert scrub(text)[0] == "fax +56 2 2345 6789 0 y celular <PHONE>."
+    assert scrub("Llame al +56 9 8765 4321. 2 operadores atienden.")[0] == (
+        "Llame al <PHONE>. 2 operadores atienden."
+    )
+    assert scrub("Código +56 9 8765 4321.5 no es un teléfono.")[0] == (
+        "Código +56 9 8765 4321.5 no es un teléfono."
+    )
+
+
+@pytest.mark.parametrize(
+    "labelled",
+    [
+        "versión 1.2.3.4",
+        "Version 10.0.19.2",
+        "v1.2.3.4",
+        "Art. 3.1.2.4",
+        "artículo 2.1.1.5",
+        "sección 4.2.1.1",
+        "N° 1.1.2.3",
+    ],
+)
+def test_labelled_dotted_numbers_are_not_ips(labelled):
+    text = f"Ver {labelled} del documento."
+    assert scrub(text)[0] == text
+
+
+def test_unlabelled_dotted_quads_are_treated_as_ips():
+    # Documented limitation: without a label, a section number in the 0-255
+    # range is indistinguishable from an IPv4 address and is replaced.
+    assert scrub("Ver 3.1.2.4 del documento.")[0] == "Ver <IP> del documento."
+    assert scrub("Conéctese a 10.0.0.1 desde la red.")[0] == "Conéctese a <IP> desde la red."
 
 
 def test_email_and_ip():

@@ -6,8 +6,9 @@ learns that an identifier appears in that position, without memorizing it.
 
 Precision matters as much as recall here: replacing arbitrary numbers would
 corrupt prices, dates and statistics. The RUT matcher therefore validates the
-mod-11 check digit and leaves invalid candidates untouched, and the phone
-matcher requires the ``+56`` country code.
+mod-11 check digit and leaves invalid candidates untouched, the phone
+matcher requires the ``+56`` country code and exactly nine digits, and a
+dotted quad labelled as a version or legal section is not treated as an IP.
 """
 
 from __future__ import annotations
@@ -27,12 +28,34 @@ EMAIL_RE = re.compile(
 # Dotted (12.345.678-5) or plain (12345678-5) body, then the check digit.
 RUT_RE = re.compile(r"(?<![\w.])(\d{1,2}\.\d{3}\.\d{3}|\d{7,8})-([\dkK])(?![\w-])")
 
-# +56 followed by exactly nine digits, with optional spaces, dots, dashes or
-# parentheses between them: +56 9 1234 5678, +56 (2) 2345 6789, +56-32-123-4567.
-PHONE_RE = re.compile(r"(?<![\w+])(?:\(\+56\)|\+56)(?:[\s.\-()]*\d){9}(?![\d])")
+# +56 followed by exactly nine digits, with optional spaces, tabs, dots, dashes
+# or parentheses between them: +56 9 1234 5678, +56 (2) 2345 6789,
+# +56-32-123-4567. Separators never include newlines, so digits spread over
+# several lines are not joined. The trailing lookahead rejects the match when
+# another digit follows after separators ("+56 9 1234 5678 9"), so a longer
+# number is left whole instead of being partly replaced. A dot counts as a
+# trailing separator only when a digit follows it directly, so a phone that
+# ends a sentence ("... 5678. 2 operadores") is still matched.
+_PHONE_SEP = r"[ \t.\-()]"
+PHONE_RE = re.compile(rf"(?<![\w+])(?:\(\+56\)|\+56)(?:{_PHONE_SEP}*\d){{9}}(?![ \t\-()]*\.?\d)")
 
 _OCTET = r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)"
 IPV4_RE = re.compile(rf"(?<![\d.])(?:{_OCTET}\.){{3}}{_OCTET}(?!\.?\d)")
+
+# A dotted quad is also how versions and legal sections are numbered
+# ("versión 1.2.3.4", "Art. 3.1.2.4"). A candidate preceded by one of these
+# words is left alone. Other dotted quads in the 0-255 range are treated as IP
+# addresses, so unlabelled section or version numbers are still replaced.
+_NOT_IP_CONTEXT = re.compile(
+    r"(?:\bv|\bversi[oó]n|\bversion|\brelease|\bart[íi]culo|\bart\.|\bsecci[oó]n"
+    r"|\bcap[íi]tulo|\bnumeral|\binciso|\bn[º°]|\bnro\.)\s*$",
+    re.IGNORECASE,
+)
+
+
+def _is_ip(m: re.Match[str]) -> bool:
+    before = m.string[max(0, m.start() - 20) : m.start()]
+    return _NOT_IP_CONTEXT.search(before) is None
 
 
 def rut_check_digit(body: int) -> str:
@@ -72,7 +95,7 @@ _RULES: tuple[_Rule, ...] = (
     _Rule("EMAIL", EMAIL_RE, lambda m: True),
     _Rule("RUT", RUT_RE, lambda m: is_valid_rut(m.group(0))),
     _Rule("PHONE", PHONE_RE, lambda m: _is_chilean_phone(m.group(0))),
-    _Rule("IP", IPV4_RE, lambda m: True),
+    _Rule("IP", IPV4_RE, _is_ip),
 )
 
 

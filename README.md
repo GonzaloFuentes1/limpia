@@ -162,12 +162,13 @@ candidate pair to reach `t`, at a cost quadratic in bucket size.
 |---|---|---|
 | Email | `user@domain.tld` | `<EMAIL>` |
 | Chilean RUT | `12.345.678-5`, `12345678-5`, `...-K`; replaced only if the mod-11 check digit is valid | `<RUT>` |
-| Chilean phone | `+56` or `(+56)` followed by exactly nine digits, first digit 2-9, with optional separators | `<PHONE>` |
-| IPv4 | four octets 0-255, not part of a longer dotted number | `<IP>` |
+| Chilean phone | `+56` or `(+56)` followed by exactly nine digits, first digit 2-9, with optional spaces, tabs, dots, dashes or parentheses; not matched when another digit follows after separators | `<PHONE>` |
+| IPv4 | four octets 0-255, not part of a longer dotted number, not preceded by a version or section label (`v`, `versión`, `Art.`, `artículo`, `sección`, `N°`, ...) | `<IP>` |
 
 Precision is favoured over recall: prices (`$9.990`), dates and population counts must not be
 rewritten, which is why numbers without a valid check digit or without the country code are
-left untouched. Names and addresses are out of scope.
+left untouched. A dotted quad without a label, such as a bare section number `3.1.2.4`, is
+indistinguishable from an IPv4 address and is replaced. Names and addresses are out of scope.
 
 ## Benchmark decontamination
 
