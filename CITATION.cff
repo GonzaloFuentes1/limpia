@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "limpia: Spanish and Latin American pretraining data curation"
+type: software
+authors:
+  - family-names: Fuentes
+    given-names: Gonzalo
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/GonzaloFuentes1/limpia"
+keywords:
+  - pretraining data
+  - data curation
+  - deduplication
+  - minhash
+  - spanish

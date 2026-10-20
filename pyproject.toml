@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "limpia"
+version = "0.1.0"
+description = "Spanish and Latin American pretraining data curation: quality heuristics, MinHash dedup, PII scrubbing and benchmark decontamination"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Gonzalo Fuentes" }]
+keywords = ["llm", "pretraining-data", "data-curation", "deduplication", "minhash", "spanish", "nlp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: Spanish",
+    "Natural Language :: Portuguese",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = ["numpy>=1.26", "pyyaml>=6.0"]
+
+[project.optional-dependencies]
+fast = ["xxhash>=3.4"]
+dev = ["pytest>=8.0", "ruff>=0.6", "xxhash>=3.4"]
+
+[project.urls]
+Repository = "https://github.com/GonzaloFuentes1/limpia"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/limpia"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "C4", "PTH"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["limpia"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
