@@ -120,7 +120,9 @@ are enforced.
 
 **Exact.** Documents are normalized (NFKC, casefold, punctuation removed, whitespace collapsed,
 accents kept because `esta` and `está` are different words) and hashed to 64 bits; the first
-occurrence is kept.
+occurrence is kept. A document whose normalized text is empty (only punctuation, symbols or
+emoji) is never removed as a duplicate, by either method: normalization erased everything that
+could tell two such documents apart.
 
 **Near-duplicate.** Each document becomes a set of word 5-gram shingles (character shingles
 are available). A MinHash signature of `k` values estimates Jaccard similarity, since for a

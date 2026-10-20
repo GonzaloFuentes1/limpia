@@ -17,6 +17,7 @@ from limpia.dedup import (
     pairwise_scores,
 )
 from limpia.dedup.lsh import false_negative_area, false_positive_area, lsh_clusters
+from limpia.dedup.minhash import EMPTY
 from limpia.document import Document
 from limpia.pipeline import Pipeline
 
@@ -122,6 +123,30 @@ def test_exact_dedup_ignores_case_punctuation_and_whitespace():
 
 def test_exact_dedup_keeps_accent_differences():
     assert exact_clusters(["Esta es mi casa.", "Está es mi casa."]).tolist() == [0, 1]
+
+
+# Texts that normalize to the empty string: nothing is left to compare.
+EMPTY_AFTER_NORMALIZATION = ["", "   ", "!!! ???", "★★★", "😀😀", "— « » —"]
+
+
+def test_exact_dedup_keeps_texts_that_normalize_to_nothing():
+    texts = [*EMPTY_AFTER_NORMALIZATION, "Hola.", "hola"]
+    n = len(EMPTY_AFTER_NORMALIZATION)
+    assert exact_clusters(texts).tolist() == [*range(n), n, n]
+    pipe = Pipeline([ExactDedupFilter()])
+    kept = list(pipe.run(Document(str(i), t) for i, t in enumerate(texts)))
+    assert len(kept) == n + 1
+
+
+def test_near_dedup_keeps_texts_with_no_shingles_as_singletons():
+    texts = [*EMPTY_AFTER_NORMALIZATION, CLEAN_ES, CLEAN_ES.upper()]
+    dd = MinHashDeduplicator(MinHashDedupConfig(threshold=0.8, num_perm=64, seed=0))
+    sigs = dd.signatures(texts)
+    n = len(EMPTY_AFTER_NORMALIZATION)
+    assert np.all(sigs[:n] == EMPTY)
+    for verify in (False, True):
+        roots = lsh_clusters(sigs, dd.bands, dd.rows, verify_threshold=0.8 if verify else None)
+        assert roots.tolist() == [*range(n), n, n]
 
 
 # ------------------------------------------------------------------ near dedup
