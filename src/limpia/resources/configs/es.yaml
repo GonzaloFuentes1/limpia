@@ -16,7 +16,7 @@ sources:
     citation: "Penedo et al. (2024). The FineWeb Datasets: Decanting the Web for the Finest Text Data at Scale."
     url: "https://arxiv.org/abs/2406.17557"
   fineweb2:
-    citation: "Penedo et al. (2025). FineWeb2: One Pipeline to Scale Them All."
+    citation: "Penedo et al. (2025). FineWeb2: One Pipeline to Scale Them All -- Adapting Pre-Training Data Processing to Every Language."
     url: "https://arxiv.org/abs/2506.20920"
   limpia:
     citation: "Regional adaptation in this repository (see rationale)."
