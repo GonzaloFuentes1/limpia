@@ -1,2 +1,6 @@
 # limpia
-Spanish and Latin American pretraining data curation: quality heuristics, MinHash dedup, PII scrubbing and benchmark decontamination
+
+Spanish and Latin American pretraining data curation: quality heuristics, MinHash
+deduplication, PII scrubbing and benchmark decontamination.
+
+Work in progress.
