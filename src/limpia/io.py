@@ -8,6 +8,7 @@ dumps ship compressed and decompressing them to disk first doubles storage.
 from __future__ import annotations
 
 import gzip
+import io
 import json
 from collections.abc import Iterable, Iterator
 from pathlib import Path
@@ -17,8 +18,16 @@ from limpia.document import Document
 
 
 def _open(path: Path, mode: str) -> IO[str]:
+    """Open a text stream with ``\\n`` line endings on every platform.
+
+    Gzip output is written with ``mtime=0`` in its header, so the same input
+    gives byte-identical ``.jsonl.gz`` files across runs and operating systems.
+    """
     if path.suffix == ".gz":
-        return gzip.open(path, mode + "t", encoding="utf-8")
+        if mode == "w":
+            raw = gzip.GzipFile(path, "wb", mtime=0)
+            return io.TextIOWrapper(raw, encoding="utf-8", newline="\n")
+        return gzip.open(path, "rt", encoding="utf-8", newline="\n")
     return path.open(mode, encoding="utf-8", newline="\n")
 
 

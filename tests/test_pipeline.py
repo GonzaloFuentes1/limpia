@@ -127,6 +127,24 @@ def test_jsonl_roundtrip_preserves_unknown_fields(tmp_path, suffix):
     assert again[0].metadata == {"url": "https://ejemplo.cl", "score": 0.9}
 
 
+@pytest.mark.parametrize("suffix", [".jsonl", ".jsonl.gz"])
+def test_output_bytes_use_lf_and_are_reproducible(tmp_path, suffix):
+    docs = [Document("1", "Línea uno\nlínea dos"), Document("2", "Otra")]
+    first, second = tmp_path / "a" / f"out{suffix}", tmp_path / "b" / f"out{suffix}"
+    write_jsonl(docs, first)
+    write_jsonl(docs, second)
+    # Same input, same file name: identical bytes, including the gzip header
+    # (whose timestamp is fixed to 0).
+    assert first.read_bytes() == second.read_bytes()
+    raw = first.read_bytes()
+    if suffix.endswith(".gz"):
+        assert raw[4:8] == b"\x00\x00\x00\x00"  # MTIME field of the gzip header
+        raw = gzip.decompress(raw)
+    assert b"\r\n" not in raw
+    assert raw.endswith(b"}\n")
+    assert raw.count(b"\n") == 2
+
+
 def test_missing_id_gets_stable_line_based_id(tmp_path):
     src = tmp_path / "corpus.jsonl"
     src.write_text('{"text": "a"}\n\n{"text": "b"}\n', encoding="utf-8")
