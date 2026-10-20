@@ -128,14 +128,15 @@ class GopherRepetitionFilter(Filter):
     def check(self, doc: Document) -> str | None:
         c = self.config
         m = self.measure(doc.text)
-        if m["dup_line_frac"] > c.max_dup_line_frac:
-            return "gopher_repetition:dup_line_frac"
-        if m["dup_para_frac"] > c.max_dup_para_frac:
-            return "gopher_repetition:dup_para_frac"
-        if m["dup_line_char_frac"] > c.max_dup_line_char_frac:
-            return "gopher_repetition:dup_line_char_frac"
-        if m["dup_para_char_frac"] > c.max_dup_para_char_frac:
-            return "gopher_repetition:dup_para_char_frac"
+        # A threshold of None disables the rule (FineWeb-2 disables three of them).
+        for key, limit in (
+            ("dup_line_frac", c.max_dup_line_frac),
+            ("dup_para_frac", c.max_dup_para_frac),
+            ("dup_line_char_frac", c.max_dup_line_char_frac),
+            ("dup_para_char_frac", c.max_dup_para_char_frac),
+        ):
+            if limit is not None and m[key] > limit:
+                return f"gopher_repetition:{key}"
         for n, limit in sorted(c.max_top_ngram_char_frac.items()):
             if m[f"top_{n}gram_char_frac"] > limit:
                 return f"gopher_repetition:top_{n}gram"

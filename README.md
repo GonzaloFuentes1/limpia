@@ -79,11 +79,25 @@ carried through unchanged. `.jsonl.gz` is read and written transparently.
 
 ## Quality filters
 
-Thresholds live in [`src/limpia/resources/configs/es.yaml`](src/limpia/resources/configs/es.yaml)
-and [`pt.yaml`](src/limpia/resources/configs/pt.yaml). Every entry has a `value`, a `source` and
-a one-line `rationale`; the loader refuses entries without them, and unknown keys are errors
-rather than silently ignored. Spanish and Portuguese currently share the numeric values and
-differ in stopword lists and rationales.
+Thresholds live in YAML files under
+[`src/limpia/resources/configs`](src/limpia/resources/configs). Every entry has a `value`, a
+`source` and a one-line `rationale`; the loader refuses entries without them, unknown keys are
+errors rather than silently ignored, and a `null` value disables a rule. Four configs are
+bundled:
+
+- `es` and `pt` (the default is `es`): the Gopher and FineWeb values as published for English,
+  with Spanish or Portuguese stopword lists and the three orthographic adaptations below. The
+  two files share their numeric values.
+- `es-fineweb2` and `pt-fineweb2`: the per-language thresholds and stopword lists that
+  FineWeb-2 calibrated for `spa_Latn` and `por_Latn`
+  ([configs](https://github.com/huggingface/fineweb-2/tree/d0defb24f193bb9a5a11b8b14524a03c4858e1b6/configs)),
+  with the rules that the FineWeb-2 pipeline disables set to `null`. For example, the Spanish
+  top 2-gram limit is 0.156 instead of 0.20 and the duplicate-line limit 0.252 instead of 0.30;
+  the Portuguese top 2-gram limit is 0.371. FineWeb-2 fitted these values with datatrove's
+  tokenizers and also filters on a language-identification score, which limpia does not
+  compute, so they transfer approximately.
+
+The table below lists the `es` values.
 
 | Rule | Document removed when | Value | Source |
 |---|---|---|---|

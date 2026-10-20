@@ -1,0 +1,18 @@
+# Stopword list of the FineWeb-2 por_Latn config (huggingface/fineweb-2, commit d0defb2,
+# Apache-2.0): https://github.com/huggingface/fineweb-2/blob/d0defb24f193bb9a5a11b8b14524a03c4858e1b6/configs/por_Latn.yml
+de
+a
+e
+o
+em
+do
+da
+que
+um
+no
+uma
+com
+para
+na
+é
+foi

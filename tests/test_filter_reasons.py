@@ -9,6 +9,7 @@ it. The measured statistics are asserted alongside the reason so that a change
 of definition shows up as a numeric failure, not only as a different reason.
 """
 
+import dataclasses
 import inspect
 import random
 import re
@@ -225,10 +226,62 @@ def test_every_reason_has_a_fixture():
         "gopher_repetition:dup_line_char_frac",
         "gopher_repetition:dup_para_char_frac",
         *(f"gopher_repetition:{reason}" for reason, *_ in NGRAM_CASES),
+        "fineweb_lines:list_ratio",
     }
     source = inspect.getsource(gopher) + inspect.getsource(fineweb)
     literal = set(re.findall(r'"((?:gopher_quality|gopher_repetition|fineweb_lines):\w+)"', source))
+    # Line and paragraph rules are returned as f"gopher_repetition:{key}".
+    keyed = {
+        f"gopher_repetition:{key}"
+        for key in re.findall(r'\("(\w+)", c\.max_\w+\)', inspect.getsource(gopher))
+    }
+    assert len(keyed) == 4
     templated = {f"gopher_repetition:top_{n}gram" for n in REP.max_top_ngram_char_frac} | {
         f"gopher_repetition:dup_{n}gram" for n in REP.max_dup_ngram_char_frac
     }
-    assert literal | templated == covered
+    assert literal | keyed | templated == covered
+
+
+# ---------------------------------------------------------- FineWeb-2 configs
+
+ES_FW2 = load_language_config("es-fineweb2")
+
+
+def test_list_ratio_with_the_fineweb2_threshold():
+    # Short sentences, one per line: 5 newlines over 35 words (0.143), above the
+    # spa_Latn new_line_ratio of 0.138; the other line rules pass.
+    lines = [
+        "La feria del libro abrirá el sábado.",
+        "Habrá talleres para niños por la tarde.",
+        "Las editoriales venderán con descuento.",
+        "El municipio instalará toldos en la plaza.",
+        "La entrada es gratuita para todos.",
+        "No requiere inscripción.",
+    ]
+    text = "\n".join(lines)
+    f = FineWebLineFilter(ES_FW2.fineweb)
+    m = f.measure(text)
+    assert m["newline_word_ratio"] == pytest.approx(5 / 35)
+    assert len(split_words(text)) == 35
+    assert m["newline_word_ratio"] > ES_FW2.fineweb.max_newline_word_ratio
+    assert _reason(f, text) == "fineweb_lines:list_ratio"
+    # The paper-based config does not apply the rule.
+    assert ES.fineweb.max_newline_word_ratio is None
+    assert _reason(FineWebLineFilter(ES.fineweb), text) is None
+    # The same sentences as one paragraph pass.
+    assert _reason(f, " ".join(lines)) is None
+
+
+def test_rules_disabled_by_fineweb2_do_not_fire():
+    # Duplicated paragraphs and many short lines: removed by the paper-based
+    # config, not by the FineWeb-2 config, which disables those rules.
+    text = _dup_line_chars_text()
+    assert _reason(GopherRepetitionFilter(REP), text) == "gopher_repetition:dup_line_char_frac"
+    assert ES_FW2.gopher_repetition.max_dup_line_char_frac is None
+    assert _reason(GopherRepetitionFilter(ES_FW2.gopher_repetition), text) != (
+        "gopher_repetition:dup_line_char_frac"
+    )
+    short = CLEAN_ES + "\n" + "\n".join(f"Sí, {i}." for i in range(20))
+    fw = dataclasses.replace(ES_FW2.fineweb, max_newline_word_ratio=None)
+    assert _reason(FineWebLineFilter(ES.fineweb), short) == "fineweb_lines:short_line_ratio"
+    assert _reason(FineWebLineFilter(fw), short) != "fineweb_lines:short_line_ratio"
