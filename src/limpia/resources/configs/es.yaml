@@ -42,7 +42,7 @@ gopher_quality:
   max_symbol_word_ratio:
     value: 0.1
     source: gopher
-    rationale: "Many '#' or ellipses per word indicates hashtag spam or truncated listings."
+    rationale: "Applied separately to '#' per word and to ellipses per word, as in Gopher; either one above it indicates hashtag spam or truncated listings."
   max_bullet_lines_ratio:
     value: 0.9
     source: gopher
@@ -58,7 +58,7 @@ gopher_quality:
   min_stopwords:
     value: 2
     source: fineweb2
-    rationale: "Gopher requires two English stopwords; FineWeb-2 replaces the English list with language-specific ones, as done here with a Spanish list."
+    rationale: "Gopher requires at least two distinct words from an eight-word English list; FineWeb-2 replaces the English list with language-specific ones, as done here with a Spanish list. Distinct words are counted, as in Gopher and datatrove."
   bullet_prefixes:
     value: ["•", "‣", "◦", "▪", "►", "-", "*"]
     source: limpia

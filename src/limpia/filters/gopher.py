@@ -24,9 +24,14 @@ _ELLIPSES = ("...", "…")
 class GopherQualityFilter(Filter):
     """Word-count, word-length, symbol, bullet, ellipsis, alphabetic and stopword rules.
 
-    The stopword rule is the one that most needs localization: Gopher's English
-    list would reject every Spanish document, so the list comes from the
-    language config.
+    The stopword rule is the one that most needs localization: Gopher's list
+    has eight English words, so the list comes from the language config. As in
+    Gopher ("at least two of the following English words") and datatrove, the
+    rule counts distinct stopwords, not occurrences.
+
+    The symbol rule applies the same threshold separately to the hash ratio
+    and to the ellipsis ratio, as Gopher does ("for either the hash symbol or
+    the ellipsis").
     """
 
     name = "gopher_quality"
@@ -41,11 +46,12 @@ class GopherQualityFilter(Filter):
         lines = split_lines(text)
         n_words = len(words)
         bullets = tuple(self.config.bullet_prefixes)
-        symbols = text.count("#") + sum(text.count(e) for e in _ELLIPSES)
+        ellipses = sum(text.count(e) for e in _ELLIPSES)
         return {
             "n_words": float(n_words),
             "mean_word_length": (sum(len(w) for w in words) / n_words) if n_words else 0.0,
-            "symbol_word_ratio": (symbols / n_words) if n_words else 0.0,
+            "hash_word_ratio": (text.count("#") / n_words) if n_words else 0.0,
+            "ellipsis_word_ratio": (ellipses / n_words) if n_words else 0.0,
             "bullet_lines_ratio": (
                 sum(line.startswith(bullets) for line in lines) / len(lines) if lines else 0.0
             ),
@@ -55,7 +61,7 @@ class GopherQualityFilter(Filter):
             "alpha_words_ratio": (
                 sum(any(c.isalpha() for c in t) for t in tokens) / len(tokens) if tokens else 0.0
             ),
-            "stopwords": float(sum(w.lower() in self.stopwords for w in words)),
+            "distinct_stopwords": float(len({w.lower() for w in words} & self.stopwords)),
         }
 
     def check(self, doc: Document) -> str | None:
@@ -69,15 +75,17 @@ class GopherQualityFilter(Filter):
             return "gopher_quality:short_mean_word_length"
         if m["mean_word_length"] > c.max_mean_word_length:
             return "gopher_quality:long_mean_word_length"
-        if m["symbol_word_ratio"] > c.max_symbol_word_ratio:
-            return "gopher_quality:symbol_word_ratio"
+        if m["hash_word_ratio"] > c.max_symbol_word_ratio:
+            return "gopher_quality:hash_ratio"
+        if m["ellipsis_word_ratio"] > c.max_symbol_word_ratio:
+            return "gopher_quality:ellipsis_ratio"
         if m["bullet_lines_ratio"] > c.max_bullet_lines_ratio:
             return "gopher_quality:bullet_lines"
         if m["ellipsis_lines_ratio"] > c.max_ellipsis_lines_ratio:
             return "gopher_quality:ellipsis_lines"
         if m["alpha_words_ratio"] < c.min_alpha_words_ratio:
             return "gopher_quality:alpha_words_ratio"
-        if m["stopwords"] < c.min_stopwords:
+        if m["distinct_stopwords"] < c.min_stopwords:
             return "gopher_quality:too_few_stopwords"
         return None
 

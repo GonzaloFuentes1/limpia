@@ -28,7 +28,7 @@ def test_full_run_on_sample(tmp_path):
     reasons = {r: n for s in report["steps"] for r, n in s["reasons"].items()}
     assert reasons == {
         "gopher_quality:too_few_words": 2,
-        "fineweb_lines:terminal_punct_ratio": 1,
+        "gopher_quality:too_few_stopwords": 1,
         "exact_dedup:duplicate": 1,
         "decontam:contaminated": 1,
     }
