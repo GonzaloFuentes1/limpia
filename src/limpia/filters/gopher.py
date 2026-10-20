@@ -87,6 +87,8 @@ class GopherRepetitionFilter(Filter):
 
     N-grams are computed over lowercased, punctuation-stripped words so that
     "Comprar ahora." and "comprar ahora" count as the same repeated phrase.
+    Every character fraction is divided by the document length ``len(text)``,
+    as in Gopher and datatrove (see ``limpia.filters.repetition``).
     """
 
     name = "gopher_repetition"
@@ -98,8 +100,9 @@ class GopherRepetitionFilter(Filter):
         lines = split_lines(text)
         paragraphs = split_paragraphs(text)
         words = split_words(text, lowercase=True)
-        dup_line, dup_line_chars = duplicate_fractions(lines)
-        dup_para, dup_para_chars = duplicate_fractions(paragraphs)
+        total = len(text)
+        dup_line, dup_line_chars = duplicate_fractions(lines, total_chars=total)
+        dup_para, dup_para_chars = duplicate_fractions(paragraphs, total_chars=total)
         stats = {
             "dup_line_frac": dup_line,
             "dup_line_char_frac": dup_line_chars,
@@ -107,9 +110,11 @@ class GopherRepetitionFilter(Filter):
             "dup_para_char_frac": dup_para_chars,
         }
         for n in self.config.max_top_ngram_char_frac:
-            stats[f"top_{n}gram_char_frac"] = top_ngram_char_fraction(words, n)
+            stats[f"top_{n}gram_char_frac"] = top_ngram_char_fraction(words, n, total_chars=total)
         for n in self.config.max_dup_ngram_char_frac:
-            stats[f"dup_{n}gram_char_frac"] = duplicated_ngram_char_fraction(words, n)
+            stats[f"dup_{n}gram_char_frac"] = duplicated_ngram_char_fraction(
+                words, n, total_chars=total
+            )
         return stats
 
     def check(self, doc: Document) -> str | None:

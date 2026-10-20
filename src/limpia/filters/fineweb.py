@@ -3,9 +3,19 @@
 FineWeb added three rules on top of Gopher and C4 that target the line
 structure of extracted web pages: lists without sentence punctuation, pages
 dominated by short navigation lines, and boilerplate lines repeated within a
-page. The comparisons follow the paper's direction exactly (``<=`` for the
-punctuation ratio, ``>=`` for the other two), which differs from Gopher's
-strict ``>``; keeping them as published makes results comparable.
+page. The comparisons follow the wording of the paper's section 3.6 (``<=``
+for the punctuation ratio, ``>=`` for the other two, "shorter than 30
+characters"), which differs from Gopher's strict ``>``.
+
+datatrove's ``FineWebQualityFilter``, the code that produced FineWeb, differs
+from that wording: it removes when the punctuation ratio is ``< 0.12``, the
+short-line ratio is ``> 0.67`` with short meaning ``len(line) <= 30``, and the
+duplicated-line character ratio is ``> 0.01`` (not 0.1). It also has a fourth
+``list_ratio`` rule (newlines per word ``> 0.3``) that the paper's section 3.6
+does not list and that is not implemented here. Results are therefore close
+to, but not identical with, FineWeb's released filtering. The denominator of
+the duplicated-line character ratio follows datatrove (document characters
+without newlines), since the paper does not state one.
 """
 
 from __future__ import annotations
@@ -28,7 +38,9 @@ class FineWebLineFilter(Filter):
         if not lines:
             return {"terminal_punct_ratio": 0.0, "short_line_ratio": 0.0, "dup_line_char_frac": 0.0}
         terminal = tuple(self.config.terminal_punctuation)
-        _, dup_chars = duplicate_fractions(lines)
+        # Denominator as in datatrove's FineWebQualityFilter: document characters
+        # without newlines.
+        _, dup_chars = duplicate_fractions(lines, total_chars=len(text.replace("\n", "")))
         return {
             "terminal_punct_ratio": sum(line.endswith(terminal) for line in lines) / len(lines),
             "short_line_ratio": (
