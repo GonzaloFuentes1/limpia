@@ -250,8 +250,9 @@ Command: `python benchmarks/dedup_bench.py --n-clusters 2000 --max-copies 4 --se
 - **Steps decide, the pipeline counts.** Filters return a reason or `None` and transforms
   return a new document plus counters; only the pipeline mutates statistics. This keeps the
   report consistent by construction and makes every removal attributable.
-- **Immutable documents.** Transforms return new `Document` instances, so no step can change
-  what an earlier step saw.
+- **Shallowly immutable documents.** Transforms return new `Document` instances; fields cannot
+  be reassigned and `metadata` is a read-only view of a private copy, so no step can change
+  what an earlier step saw. Values nested inside `metadata` are not copied.
 - **Measure, then decide.** Statistics are pure functions of text, separate from thresholds,
   which makes them testable against brute-force references and reusable for calibration.
 - **Cheap rules first.** The default stack runs the O(n) Gopher rules before line rules and
@@ -266,7 +267,7 @@ Command: `python benchmarks/dedup_bench.py --n-clusters 2000 --max-copies 4 --se
 ```
 src/limpia/
   pipeline.py        Filter / Transform contracts, Pipeline, report
-  io.py, document.py streaming JSONL, immutable Document
+  io.py, document.py streaming JSONL, read-only Document
   config.py          per-language YAML with provenance validation
   filters/           Gopher quality and repetition, FineWeb line rules
   dedup/             exact, MinHash, LSH (b, r) choice, union-find, metrics

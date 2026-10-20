@@ -1,6 +1,8 @@
+import dataclasses
 import gzip
 import itertools
 import json
+import pickle
 import random
 
 import pytest
@@ -102,6 +104,30 @@ def test_documents_are_immutable():
     new = doc.with_text("chao").with_metadata(lang="es")
     assert doc.text == "hola" and doc.metadata == {"url": "u"}
     assert new.metadata == {"url": "u", "lang": "es"}
+
+
+def test_document_metadata_is_read_only_and_not_shared():
+    source = {"url": "u"}
+    doc = Document("x", "hola", source)
+    source["url"] = "changed"  # the caller's dict is copied
+    assert doc.metadata == {"url": "u"}
+    with pytest.raises(TypeError):
+        doc.metadata["url"] = "v"  # type: ignore[index]
+    copy = doc.with_text("chao")
+    assert copy.metadata is not doc.metadata
+    assert copy.metadata == doc.metadata
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        doc.text = "otro"  # type: ignore[misc]
+
+
+def test_documents_are_hashable_and_picklable():
+    a = Document("x", "hola", {"url": "u", "tags": ["a"]})
+    b = Document("x", "hola", {"url": "u", "tags": ["a"]})
+    assert a == b and hash(a) == hash(b)
+    assert len({a, b}) == 1
+    again = pickle.loads(pickle.dumps(a))
+    assert again == a
+    assert dict(again.metadata) == {"url": "u", "tags": ["a"]}
 
 
 @pytest.mark.parametrize("suffix", [".jsonl", ".jsonl.gz"])
