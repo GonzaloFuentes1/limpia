@@ -9,6 +9,11 @@ A 64-bit hash is stored instead of the text to keep memory proportional to the
 number of distinct documents, not their size. The birthday bound gives a
 collision probability of roughly ``N**2 / 2**65``: about 3e-4 for 100 million
 documents, which would wrongly drop a single document.
+
+A document whose normalized text is empty (empty, or only punctuation,
+symbols or emoji) is never treated as a duplicate: normalization erased
+everything that could distinguish two such documents, so matching them would
+remove unrelated content. The same rule applies in MinHash dedup.
 """
 
 from __future__ import annotations
@@ -35,7 +40,10 @@ class ExactDedupFilter(Filter):
         self._seen: set[int] = set()
 
     def check(self, doc: Document) -> str | None:
-        key = exact_key(doc.text, self.hasher)
+        norm = normalize_for_matching(doc.text)
+        if not norm:
+            return None
+        key = hash64(norm, self.hasher)
         if key in self._seen:
             return "exact_dedup:duplicate"
         self._seen.add(key)
@@ -43,9 +51,13 @@ class ExactDedupFilter(Filter):
 
 
 def exact_clusters(texts: list[str], hasher: Hasher = "blake2b") -> np.ndarray:
-    """Cluster root (index of first occurrence) for every text."""
+    """Cluster root (index of first occurrence) for every text.
+
+    Texts that normalize to the empty string are their own roots.
+    """
     first: dict[int, int] = {}
     roots = np.empty(len(texts), dtype=np.int64)
     for i, text in enumerate(texts):
-        roots[i] = first.setdefault(exact_key(text, hasher), i)
+        norm = normalize_for_matching(text)
+        roots[i] = first.setdefault(hash64(norm, hasher), i) if norm else i
     return roots

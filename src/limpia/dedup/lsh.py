@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from limpia.dedup.minhash import EMPTY
 from limpia.dedup.unionfind import UnionFind
 
 _QUAD_POINTS = 2001  # odd, required by Simpson's rule
@@ -99,15 +100,23 @@ def lsh_clusters(
     With ``verify_threshold`` set, a candidate pair is merged only if its
     estimated Jaccard reaches the threshold. This trades extra comparisons
     (quadratic in bucket size) for fewer false positives from the S-curve tail.
+
+    A document whose normalized text has no shingles (empty, or only
+    punctuation, symbols or emoji) has the all-``EMPTY`` signature. Such
+    documents carry no evidence of similarity, so each one stays a singleton
+    instead of being merged with every other empty document.
     """
     n_docs, num_perm = signatures.shape
     if bands * rows > num_perm:
         raise ValueError(f"bands * rows = {bands * rows} exceeds num_perm = {num_perm}")
     uf = UnionFind(n_docs)
+    empty = np.all(signatures == EMPTY, axis=1) if n_docs else np.zeros(0, dtype=bool)
     for band_idx in range(bands):
         cols = signatures[:, band_idx * rows : (band_idx + 1) * rows]
         for group in _band_groups(cols):
-            members = group.tolist()
+            members = [m for m in group.tolist() if not empty[m]]
+            if len(members) < 2:
+                continue
             if verify_threshold is None:
                 head = members[0]
                 for other in members[1:]:
