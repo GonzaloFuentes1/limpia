@@ -268,7 +268,8 @@ def test_spun_text_is_rejected_by_duplicated_ngrams():
     f = GopherRepetitionFilter(ES.gopher_repetition)
     m = f.measure(spun)
     assert m["dup_10gram_char_frac"] > 0.3
-    assert _check(f, spun).startswith("gopher_repetition:")
+    # The 5-gram rule is checked first among the duplicated n-gram rules.
+    assert _check(f, spun) == "gopher_repetition:dup_5gram"
 
 
 def test_paragraph_statistics():
